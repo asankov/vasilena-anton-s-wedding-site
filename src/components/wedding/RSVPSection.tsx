@@ -1,15 +1,8 @@
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
-import { Check, X } from "lucide-react";
-
-interface RSVPData {
-  name: string;
-  attending: boolean | null;
-  plusOne: boolean;
-  mealChoice: string;
-  accommodation: boolean;
-  submitted: boolean;
-}
+import { Check, X, Loader2 } from "lucide-react";
+import { RSVPData } from "../../types/rsvp";
+import { submitRSVP, getRSVPByName, deleteRSVP } from "../../services/rsvpApi";
 
 const mealOptions = [
   { value: "", label: "Select your meal preference" },
@@ -25,45 +18,113 @@ const RSVPSection = () => {
     name: "",
     attending: null,
     plusOne: false,
+    plusOneName: "",
+    plusOneMealChoice: "",
     mealChoice: "",
     accommodation: false,
     submitted: false,
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoadingInitial, setIsLoadingInitial] = useState(true);
 
-  // Load from localStorage on mount
+  // Load from backend on mount
   useEffect(() => {
-    const saved = localStorage.getItem("wedding-rsvp");
-    if (saved) {
-      setRsvp(JSON.parse(saved));
-    }
+    const loadRSVP = async () => {
+      try {
+        // Try to get name from URL query parameter first
+        const urlParams = new URLSearchParams(window.location.search);
+        const nameFromUrl = urlParams.get("name");
+
+        // Fall back to localStorage if no URL parameter
+        const savedName = nameFromUrl;
+        // || localStorage.getItem("wedding-rsvp-name");
+
+        if (savedName) {
+          const response = await getRSVPByName(savedName);
+          if (response.success && response.data) {
+            setRsvp(response.data);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load RSVP:", err);
+      } finally {
+        setIsLoadingInitial(false);
+      }
+    };
+
+    loadRSVP();
   }, []);
 
-  // Save to localStorage on change
+  // Update local state
   const updateRsvp = (updates: Partial<RSVPData>) => {
     const newRsvp = { ...rsvp, ...updates };
     setRsvp(newRsvp);
-    localStorage.setItem("wedding-rsvp", JSON.stringify(newRsvp));
+    setError(null);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Update guest meal choice
+  const updateGuestMeal = (guestIndex: number, mealChoice: string) => {
+    if (!rsvp.guests) return;
+    const updatedGuests = [...rsvp.guests];
+    updatedGuests[guestIndex] = { ...updatedGuests[guestIndex], mealChoice };
+    updateRsvp({ guests: updatedGuests });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateRsvp({ submitted: true });
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await submitRSVP({
+        name: rsvp.name,
+        guests: rsvp.guests,
+        attending: rsvp.attending!,
+        plusOne: rsvp.plusOne,
+        plusOneName: rsvp.plusOneName,
+        plusOneMealChoice: rsvp.plusOneMealChoice,
+        mealChoice: rsvp.mealChoice,
+        accommodation: rsvp.accommodation,
+        isPredefined: rsvp.isPredefined,
+      });
+
+      if (response.success && response.data) {
+        setRsvp(response.data);
+        // Save name for future lookups
+        localStorage.setItem("wedding-rsvp-name", rsvp.name);
+      } else {
+        setError(response.message || "Failed to submit RSVP");
+      }
+    } catch (err) {
+      setError("An unexpected error occurred. Please try again.");
+      console.error("RSVP submission error:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const resetForm = () => {
-    const newRsvp: RSVPData = {
-      name: "",
-      attending: null,
-      plusOne: false,
-      mealChoice: "",
-      accommodation: false,
-      submitted: false,
-    };
-    setRsvp(newRsvp);
-    localStorage.removeItem("wedding-rsvp");
+    // Keep all existing data but mark as not submitted
+    // This allows the user to update their response
+    updateRsvp({ submitted: false });
   };
 
-  if (rsvp.submitted) {
+  // Show loading state during initial load
+  if (isLoadingInitial) {
+    return (
+      <section id="rsvp" className="wedding-section">
+        <div className="text-center max-w-lg mx-auto">
+          <div className="wedding-card">
+            <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
+            <p className="wedding-text mt-4">Loading...</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (rsvp.submitted && rsvp.attending !== null) {
     return (
       <section id="rsvp" className="wedding-section">
         <motion.div
@@ -77,30 +138,64 @@ const RSVPSection = () => {
             </div>
             <h3 className="wedding-heading text-3xl mb-4">Thank You!</h3>
             <p className="wedding-text mb-6">
-              {rsvp.attending
+              {rsvp.attending === true
                 ? `We can't wait to celebrate with you${rsvp.plusOne ? " and your guest" : ""}!`
                 : "We're sorry you can't make it. You'll be missed!"}
             </p>
             {rsvp.attending && (
               <div className="text-left space-y-2 bg-navy-light/30 rounded-lg p-4 mb-6">
-                <p className="text-sm text-foreground/70">
-                  <span className="text-primary">Name:</span> {rsvp.name}
-                </p>
-                <p className="text-sm text-foreground/70">
-                  <span className="text-primary">Plus One:</span>{" "}
-                  {rsvp.plusOne ? "Yes" : "No"}
-                </p>
-                <p className="text-sm text-foreground/70">
-                  <span className="text-primary">Meal:</span>{" "}
-                  {mealOptions.find((m) => m.value === rsvp.mealChoice)?.label}
-                </p>
-                <p className="text-sm text-foreground/70">
+                {/* Display guests for couples/pre-defined guests */}
+                {rsvp.guests && rsvp.guests.length > 0 ? (
+                  <>
+                    <p className="text-sm text-foreground/70 mb-3">
+                      <span className="text-primary font-medium">Guests:</span>
+                    </p>
+                    {rsvp.guests.map((guest, index) => (
+                      <div key={index} className="ml-4 mb-2 pb-2 border-b border-primary/10 last:border-0">
+                        <p className="text-sm text-foreground/70">
+                          <span className="text-primary">Name:</span> {guest.name}
+                        </p>
+                        <p className="text-sm text-foreground/70">
+                          <span className="text-primary">Meal:</span>{" "}
+                          {mealOptions.find((m) => m.value === guest.mealChoice)?.label}
+                        </p>
+                      </div>
+                    ))}
+                  </>
+                ) : (
+                  <>
+                    {/* Display single guest */}
+                    <p className="text-sm text-foreground/70">
+                      <span className="text-primary">Name:</span> {rsvp.name}
+                    </p>
+                    <p className="text-sm text-foreground/70">
+                      <span className="text-primary">Meal:</span>{" "}
+                      {mealOptions.find((m) => m.value === rsvp.mealChoice)?.label}
+                    </p>
+                    {rsvp.plusOne && (
+                      <>
+                        <p className="text-sm text-foreground/70">
+                          <span className="text-primary">Plus One Name:</span>{" "}
+                          {rsvp.plusOneName}
+                        </p>
+                        <p className="text-sm text-foreground/70">
+                          <span className="text-primary">Plus One Meal:</span>{" "}
+                          {mealOptions.find((m) => m.value === rsvp.plusOneMealChoice)?.label}
+                        </p>
+                      </>
+                    )}
+                  </>
+                )}
+                <p className="text-sm text-foreground/70 pt-2 border-t border-primary/10">
                   <span className="text-primary">Accommodation:</span>{" "}
                   {rsvp.accommodation ? "Yes" : "No"}
                 </p>
               </div>
             )}
-            <button onClick={resetForm} className="wedding-button">
+            <button
+              onClick={resetForm}
+              className="wedding-button"
+            >
               Update Response
             </button>
           </div>
@@ -124,20 +219,45 @@ const RSVPSection = () => {
         <div className="wedding-divider mx-auto" />
 
         <form onSubmit={handleSubmit} className="wedding-card mt-12 text-left">
-          {/* Name */}
-          <div className="mb-6">
-            <label className="block text-foreground text-sm font-medium mb-2">
-              Your Name
-            </label>
-            <input
-              type="text"
-              value={rsvp.name}
-              onChange={(e) => updateRsvp({ name: e.target.value })}
-              className="wedding-input w-full"
-              placeholder="Enter your full name"
-              required
-            />
-          </div>
+          {/* Error Message */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+              <p className="text-red-400 text-sm">{error}</p>
+            </div>
+          )}
+
+          {/* Name - Display differently for couples vs single guests */}
+          {rsvp.guests && rsvp.guests.length > 0 ? (
+            /* Display guest names for couples */
+            <div className="mb-6">
+              <label className="block text-foreground text-sm font-medium mb-3">
+                Guests
+              </label>
+              <div className="space-y-2">
+                {rsvp.guests.map((guest, index) => (
+                  <div key={index} className="wedding-input w-full bg-navy-light/50 cursor-default">
+                    {guest.name}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            /* Editable name field for single guests */
+            <div className="mb-6">
+              <label className="block text-foreground text-sm font-medium mb-2">
+                Your Name
+              </label>
+              <input
+                type="text"
+                value={rsvp.name}
+                onChange={(e) => updateRsvp({ name: e.target.value })}
+                className="wedding-input w-full"
+                placeholder="Enter your full name"
+                required
+                disabled={loading}
+              />
+            </div>
+          )}
 
           {/* Attending */}
           <div className="mb-6">
@@ -172,57 +292,142 @@ const RSVPSection = () => {
             </div>
           </div>
 
-          {/* Additional options if attending */}
-          {rsvp.attending && (
+          {/* Additional options if attending - only show when attending === true */}
+          {rsvp.attending === true && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               transition={{ duration: 0.3 }}
               className="space-y-6"
             >
-              {/* Plus One */}
-              <div>
-                <label className="flex items-center gap-3 cursor-pointer group">
-                  <div
-                    className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all ${
-                      rsvp.plusOne
-                        ? "border-primary bg-primary"
-                        : "border-primary/30 group-hover:border-primary/50"
-                    }`}
-                    onClick={() => updateRsvp({ plusOne: !rsvp.plusOne })}
-                  >
-                    {rsvp.plusOne && (
-                      <Check className="w-4 h-4 text-primary-foreground" />
-                    )}
-                  </div>
-                  <span className="text-foreground">
-                    I will be bringing a plus one
-                  </span>
-                </label>
-              </div>
-
-              {/* Meal Choice */}
-              <div>
-                <label className="block text-foreground text-sm font-medium mb-2">
-                  Meal Preference
-                </label>
-                <select
-                  value={rsvp.mealChoice}
-                  onChange={(e) => updateRsvp({ mealChoice: e.target.value })}
-                  className="wedding-input w-full appearance-none cursor-pointer bg-navy-light"
-                  required
-                >
-                  {mealOptions.map((option) => (
-                    <option
-                      key={option.value}
-                      value={option.value}
-                      className="bg-navy-light"
-                    >
-                      {option.label}
-                    </option>
+              {/* Meal Selection - Different for predefined guests vs single guests */}
+              {rsvp.guests && rsvp.guests.length > 0 ? (
+                /* Multiple Guests (Couples) - Show meal selection for each */
+                <div className="space-y-4">
+                  <label className="block text-foreground text-sm font-medium mb-3">
+                    Meal Preferences
+                  </label>
+                  {rsvp.guests.map((guest, index) => (
+                    <div key={index} className="space-y-2">
+                      <p className="text-foreground/70 text-sm">{guest.name}</p>
+                      <select
+                        value={guest.mealChoice}
+                        onChange={(e) => updateGuestMeal(index, e.target.value)}
+                        className="wedding-input w-full appearance-none cursor-pointer bg-navy-light"
+                        required
+                        disabled={loading}
+                      >
+                        {mealOptions.map((option) => (
+                          <option
+                            key={option.value}
+                            value={option.value}
+                            className="bg-navy-light"
+                          >
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   ))}
-                </select>
-              </div>
+                </div>
+              ) : (
+                /* Single Guest - Show plus one option and meal selection */
+                <>
+                  {/* Plus One - Only show if not predefined */}
+                  {!rsvp.isPredefined && (
+                    <div>
+                      <label className="flex items-center gap-3 cursor-pointer group">
+                        <div
+                          className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all ${
+                            rsvp.plusOne
+                              ? "border-primary bg-primary"
+                              : "border-primary/30 group-hover:border-primary/50"
+                          }`}
+                          onClick={() => updateRsvp({ plusOne: !rsvp.plusOne })}
+                        >
+                          {rsvp.plusOne && (
+                            <Check className="w-4 h-4 text-primary-foreground" />
+                          )}
+                        </div>
+                        <span className="text-foreground">
+                          I will be bringing a plus one
+                        </span>
+                      </label>
+                    </div>
+                  )}
+
+                  {/* Plus One Details */}
+                  {rsvp.plusOne && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      transition={{ duration: 0.3 }}
+                      className="space-y-4 pl-9"
+                    >
+                      <div>
+                        <label className="block text-foreground text-sm font-medium mb-2">
+                          Plus One Name
+                        </label>
+                        <input
+                          type="text"
+                          value={rsvp.plusOneName}
+                          onChange={(e) => updateRsvp({ plusOneName: e.target.value })}
+                          className="wedding-input w-full"
+                          placeholder="Enter their full name"
+                          required
+                          disabled={loading}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-foreground text-sm font-medium mb-2">
+                          Plus One Meal Preference
+                        </label>
+                        <select
+                          value={rsvp.plusOneMealChoice}
+                          onChange={(e) => updateRsvp({ plusOneMealChoice: e.target.value })}
+                          className="wedding-input w-full appearance-none cursor-pointer bg-navy-light"
+                          required
+                          disabled={loading}
+                        >
+                          {mealOptions.map((option) => (
+                            <option
+                              key={option.value}
+                              value={option.value}
+                              className="bg-navy-light"
+                            >
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* Meal Choice for single guest */}
+                  <div>
+                    <label className="block text-foreground text-sm font-medium mb-2">
+                      Meal Preference
+                    </label>
+                    <select
+                      value={rsvp.mealChoice}
+                      onChange={(e) => updateRsvp({ mealChoice: e.target.value })}
+                      className="wedding-input w-full appearance-none cursor-pointer bg-navy-light"
+                      required
+                      disabled={loading}
+                    >
+                      {mealOptions.map((option) => (
+                        <option
+                          key={option.value}
+                          value={option.value}
+                          className="bg-navy-light"
+                        >
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </>
+              )}
 
               {/* Accommodation */}
               <div>
@@ -256,13 +461,25 @@ const RSVPSection = () => {
           <button
             type="submit"
             disabled={
+              loading ||
               rsvp.attending === null ||
               !rsvp.name ||
-              (rsvp.attending && !rsvp.mealChoice)
+              // Only validate meal choices if attending === true
+              (rsvp.attending === true && rsvp.guests && rsvp.guests.length > 0
+                ? rsvp.guests.some(g => !g.mealChoice)
+                : (rsvp.attending === true && !rsvp.mealChoice)) ||
+              (rsvp.plusOne && (!rsvp.plusOneName || !rsvp.plusOneMealChoice))
             }
             className="wedding-button w-full mt-8 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
-            Submit RSVP
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Submitting...
+              </span>
+            ) : (
+              "Submit RSVP"
+            )}
           </button>
         </form>
       </motion.div>
