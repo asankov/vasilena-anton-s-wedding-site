@@ -1,12 +1,27 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import Navigation from "@/components/wedding/Navigation";
+import WelcomeSection from "@/components/wedding/WelcomeSection";
+import CountdownSection from "@/components/wedding/CountdownSection";
+import LocationSection from "@/components/wedding/LocationSection";
+import AgendaSection from "@/components/wedding/AgendaSection";
+import RSVPSection from "@/components/wedding/RSVPSection";
 
 const Index = () => {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="bg-background min-h-screen">
+      <Navigation />
+      <WelcomeSection />
+      <CountdownSection />
+      <LocationSection />
+      <AgendaSection />
+      <RSVPSection />
+
+      {/* Footer */}
+      <footer className="py-12 text-center border-t border-primary/10">
+        <p className="font-serif text-2xl text-primary mb-2">V & A</p>
+        <p className="text-foreground/50 text-sm font-sans">
+          We can't wait to celebrate with you
+        </p>
+      </footer>
     </div>
   );
 };
