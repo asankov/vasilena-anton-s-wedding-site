@@ -70,10 +70,10 @@ const LocationSection = () => {
                   Interactive map will be available soon
                 </p>
                 <a
-                  href="https://maps.google.com"
+
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-block mt-4 text-primary hover:text-rose-light transition-colors text-sm underline underline-offset-4">
+                  className="inline-block mt-4 text-primary hover:text-rose-light transition-colors text-sm underline underline-offset-4" href="https://maps.app.goo.gl/MfkQC2t6ajDM7VW58">
 
                   Open in Google Maps
                 </a>
