@@ -9,8 +9,8 @@ const LocationSection = () => {
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
         viewport={{ once: true }}
-        className="text-center max-w-4xl mx-auto"
-      >
+        className="text-center max-w-4xl mx-auto">
+
         <h2 className="wedding-subheading mb-4">The Venue</h2>
         <h3 className="wedding-heading mb-8">Location</h3>
 
@@ -35,8 +35,8 @@ const LocationSection = () => {
                 <MapPin className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
                 <div>
                   <p className="text-foreground font-medium">Address</p>
-                  <p className="text-foreground/70 text-sm">
-                    123 Wedding Lane
+                  <p className="text-foreground/70 text-sm">Wild Hill, Shumnatoto tepe 2, Ihtiman 
+
                     <br />
                     Sofia, Bulgaria
                   </p>
@@ -73,8 +73,8 @@ const LocationSection = () => {
                   href="https://maps.google.com"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-block mt-4 text-primary hover:text-rose-light transition-colors text-sm underline underline-offset-4"
-                >
+                  className="inline-block mt-4 text-primary hover:text-rose-light transition-colors text-sm underline underline-offset-4">
+
                   Open in Google Maps
                 </a>
               </div>
@@ -82,8 +82,8 @@ const LocationSection = () => {
           </div>
         </div>
       </motion.div>
-    </section>
-  );
+    </section>);
+
 };
 
 export default LocationSection;
