@@ -1,6 +1,7 @@
-import { useQuery } from "convex/react";
+import { useState } from "react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { Loader2, Users, Check, X, UtensilsCrossed, Hotel } from "lucide-react";
+import { Loader2, Users, Check, X, UtensilsCrossed, Hotel, Plus, Trash2, UserPlus, Copy } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const mealLabels: Record<string, string> = {
@@ -13,6 +14,68 @@ const mealLabels: Record<string, string> = {
 
 const Admin = () => {
   const rsvps = useQuery(api.rsvps.getAll);
+  const createInvite = useMutation(api.rsvps.createInvite);
+
+  const [showInviteForm, setShowInviteForm] = useState(false);
+  const [inviteName, setInviteName] = useState("");
+  const [guestNames, setGuestNames] = useState<string[]>([]);
+  const [newGuestName, setNewGuestName] = useState("");
+  const [askForPlusOne, setAskForPlusOne] = useState(true);
+  const [askForAccommodation, setAskForAccommodation] = useState(true);
+  const [inviteError, setInviteError] = useState<string | null>(null);
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const addGuestName = () => {
+    const trimmed = newGuestName.trim();
+    if (trimmed && !guestNames.includes(trimmed)) {
+      setGuestNames([...guestNames, trimmed]);
+      setNewGuestName("");
+    }
+  };
+
+  const removeGuestName = (index: number) => {
+    setGuestNames(guestNames.filter((_, i) => i !== index));
+  };
+
+  const handleCreateInvite = async () => {
+    const name = inviteName.trim();
+    if (!name) {
+      setInviteError("Invite name is required");
+      return;
+    }
+    setInviteLoading(true);
+    setInviteError(null);
+    try {
+      await createInvite({
+        name,
+        guests: guestNames.length > 0 ? guestNames : undefined,
+        askForPlusOne,
+        askForAccommodation,
+      });
+      setInviteName("");
+      setGuestNames([]);
+      setNewGuestName("");
+      setAskForPlusOne(true);
+      setAskForAccommodation(true);
+      setShowInviteForm(false);
+    } catch (err) {
+      setInviteError(err instanceof Error ? err.message : "Failed to create invite");
+    } finally {
+      setInviteLoading(false);
+    }
+  };
+
+  const getInviteLink = (name: string) => {
+    const base = window.location.origin + import.meta.env.BASE_URL.replace(/\/$/, "");
+    return `${base}/?name=${encodeURIComponent(name)}`;
+  };
+
+  const copyLink = (name: string, id: string) => {
+    navigator.clipboard.writeText(getInviteLink(name));
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
   if (rsvps === undefined) {
     return (
@@ -91,6 +154,147 @@ const Admin = () => {
           </div>
         </div>
 
+        {/* Create Invite */}
+        <div className="wedding-card">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <UserPlus className="w-5 h-5 text-primary" />
+              <h2 className="text-lg font-serif text-primary">Guest Invites</h2>
+            </div>
+            {!showInviteForm && (
+              <button
+                onClick={() => setShowInviteForm(true)}
+                className="wedding-button text-sm px-4 py-2 flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" /> Create Invite
+              </button>
+            )}
+          </div>
+
+          {showInviteForm && (
+            <div className="bg-navy-light/30 rounded-lg p-4 space-y-4">
+              {inviteError && (
+                <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                  <p className="text-red-400 text-sm">{inviteError}</p>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-foreground text-sm font-medium mb-2">
+                  Invite Name
+                </label>
+                <input
+                  type="text"
+                  value={inviteName}
+                  onChange={(e) => setInviteName(e.target.value)}
+                  className="wedding-input w-full"
+                  placeholder="e.g. The Smiths, or John Doe"
+                />
+                <p className="text-foreground/50 text-xs mt-1">
+                  This is the lookup key used in the invite link (?name=...)
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-foreground text-sm font-medium mb-2">
+                  Guest Names (optional, for couples/groups)
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newGuestName}
+                    onChange={(e) => setNewGuestName(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addGuestName())}
+                    className="wedding-input flex-1"
+                    placeholder="Add a guest name"
+                  />
+                  <button
+                    type="button"
+                    onClick={addGuestName}
+                    className="px-3 py-2 bg-primary/20 text-primary rounded-lg hover:bg-primary/30 transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
+                {guestNames.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {guestNames.map((name, i) => (
+                      <span
+                        key={i}
+                        className="flex items-center gap-1 bg-primary/20 text-primary text-sm px-3 py-1 rounded-full"
+                      >
+                        {name}
+                        <button onClick={() => removeGuestName(i)} className="hover:text-red-400">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <p className="text-foreground/50 text-xs mt-1">
+                  Leave empty for single guests. Add names for couples/groups — they'll see pre-filled names and choose meals individually.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-foreground text-sm font-medium mb-3">
+                  RSVP Template
+                </label>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={askForPlusOne}
+                      onChange={(e) => setAskForPlusOne(e.target.checked)}
+                      className="w-4 h-4 accent-primary"
+                    />
+                    <span className="text-foreground text-sm">Ask for plus one</span>
+                  </label>
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={askForAccommodation}
+                      onChange={(e) => setAskForAccommodation(e.target.checked)}
+                      className="w-4 h-4 accent-primary"
+                    />
+                    <span className="text-foreground text-sm">Ask for accommodation</span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={() => {
+                    setShowInviteForm(false);
+                    setInviteName("");
+                    setGuestNames([]);
+                    setNewGuestName("");
+                    setAskForPlusOne(true);
+                    setAskForAccommodation(true);
+                    setInviteError(null);
+                  }}
+                  className="px-4 py-2 text-sm text-foreground/60 hover:text-foreground transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateInvite}
+                  disabled={inviteLoading || !inviteName.trim()}
+                  className="wedding-button text-sm px-4 py-2 disabled:opacity-50"
+                >
+                  {inviteLoading ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" /> Creating...
+                    </span>
+                  ) : (
+                    "Create Invite"
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Meal Breakdown */}
         {Object.keys(mealCounts).length > 0 && (
           <div className="wedding-card">
@@ -137,6 +341,7 @@ const Admin = () => {
                 <th className="pb-3 text-foreground/60 font-medium hidden md:table-cell">Guests</th>
                 <th className="pb-3 text-foreground/60 font-medium hidden md:table-cell">Meals</th>
                 <th className="pb-3 text-foreground/60 font-medium hidden md:table-cell">Accommodation</th>
+                <th className="pb-3 text-foreground/60 font-medium">Link</th>
               </tr>
             </thead>
             <tbody>
@@ -197,6 +402,16 @@ const Admin = () => {
                     ) : (
                       <span className="text-foreground/40">No</span>
                     )}
+                  </td>
+                  <td className="py-3">
+                    <button
+                      onClick={() => copyLink(r.name, r._id)}
+                      className="text-xs flex items-center gap-1 text-foreground/50 hover:text-primary transition-colors"
+                      title={getInviteLink(r.name)}
+                    >
+                      <Copy className="w-3 h-3" />
+                      {copiedId === r._id ? "Copied!" : "Copy"}
+                    </button>
                   </td>
                 </tr>
               ))}

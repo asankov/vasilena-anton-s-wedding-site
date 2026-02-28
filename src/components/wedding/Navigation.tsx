@@ -2,16 +2,20 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 
-const navItems = [
-  { label: "Home", href: "#" },
-  { label: "Date", href: "#countdown" },
-  { label: "Location", href: "#location" },
-  { label: "Agenda", href: "#agenda" },
-  { label: "RSVP", href: "#rsvp" },
-];
-
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const hasName = new URLSearchParams(window.location.search).has("name");
+
+  const navItems = [
+    { label: "Home", href: "#" },
+    { label: "Date", href: "#countdown" },
+    { label: "Location", href: "#location" },
+    { label: "Agenda", href: "#agenda" },
+  ];
+
+  if (hasName) {
+    navItems.push({ label: "RSVP", href: "#rsvp" });
+  }
 
   return (
     <>

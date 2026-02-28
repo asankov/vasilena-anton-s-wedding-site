@@ -30,7 +30,7 @@ export const submit = mutation({
         })
       )
     ),
-    attending: v.boolean(),
+    attending: v.union(v.boolean(), v.null()),
     plusOne: v.boolean(),
     plusOneName: v.optional(v.string()),
     plusOneMealChoice: v.optional(v.string()),
@@ -54,7 +54,7 @@ export const submit = mutation({
       plusOneMealChoice: args.plusOneMealChoice ?? "",
       mealChoice: args.mealChoice ?? "",
       accommodation: args.accommodation,
-      submitted: true,
+      submitted: args.attending !== null,
       isPredefined: args.isPredefined ?? false,
     };
 
@@ -62,8 +62,51 @@ export const submit = mutation({
       await ctx.db.patch(existing._id, data);
       return existing._id;
     } else {
-      return await ctx.db.insert("rsvps", data);
+      return await ctx.db.insert("rsvps", {
+        ...data,
+        askForPlusOne: true,
+        askForAccommodation: true,
+      });
     }
+  },
+});
+
+export const createInvite = mutation({
+  args: {
+    name: v.string(),
+    guests: v.optional(v.array(v.string())),
+    askForPlusOne: v.boolean(),
+    askForAccommodation: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    // Check if invite already exists
+    const existing = await ctx.db
+      .query("rsvps")
+      .withIndex("by_name", (q) => q.eq("name", args.name))
+      .first();
+    if (existing) {
+      throw new Error(`An invite for "${args.name}" already exists`);
+    }
+
+    const guests =
+      args.guests && args.guests.length > 0
+        ? args.guests.map((name) => ({ name, mealChoice: "" }))
+        : undefined;
+
+    return await ctx.db.insert("rsvps", {
+      name: args.name,
+      guests,
+      attending: null,
+      plusOne: false,
+      plusOneName: "",
+      plusOneMealChoice: "",
+      mealChoice: "",
+      accommodation: false,
+      submitted: false,
+      isPredefined: guests !== undefined,
+      askForPlusOne: args.askForPlusOne,
+      askForAccommodation: args.askForAccommodation,
+    });
   },
 });
 

@@ -20,5 +20,7 @@ export default defineSchema({
     accommodation: v.boolean(),
     submitted: v.boolean(),
     isPredefined: v.boolean(),
+    askForPlusOne: v.boolean(),
+    askForAccommodation: v.boolean(),
   }).index("by_name", ["name"]),
 });
