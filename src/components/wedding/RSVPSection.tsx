@@ -18,8 +18,11 @@ interface RSVPFormData {
   plusOneMealChoice: string;
   mealChoice: string;
   accommodation: boolean;
+  numberOfKids: number;
   isPredefined?: boolean;
   askForPlusOne?: boolean;
+  askForKids?: boolean;
+  maxNumberOfKids?: number;
   askForAccommodation?: boolean;
 }
 
@@ -35,17 +38,17 @@ const mealOptions = [
 const RSVPSection = () => {
   // Get name from URL query parameter
   const urlParams = new URLSearchParams(window.location.search);
-  const nameFromUrl = urlParams.get("name");
+  const name = urlParams.get("name");
 
   // Don't render RSVP section if no name parameter
-  if (!nameFromUrl) {
+  if (!name) {
     return null;
   }
 
-  return <RSVPForm nameFromUrl={nameFromUrl} />;
+  return <RSVPForm name={name} />;
 };
 
-const RSVPForm = ({ nameFromUrl }: { nameFromUrl: string }) => {
+const RSVPForm = ({ name: nameFromUrl }: { name: string }) => {
   const [rsvp, setRsvp] = useState<RSVPFormData>({
     name: nameFromUrl,
     attending: null,
@@ -54,6 +57,7 @@ const RSVPForm = ({ nameFromUrl }: { nameFromUrl: string }) => {
     plusOneMealChoice: "",
     mealChoice: "",
     accommodation: false,
+    numberOfKids: 0,
   });
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">(
     "idle",
@@ -80,8 +84,11 @@ const RSVPForm = ({ nameFromUrl }: { nameFromUrl: string }) => {
         plusOneMealChoice: existingRsvp.plusOneMealChoice,
         mealChoice: existingRsvp.mealChoice,
         accommodation: existingRsvp.accommodation,
+        numberOfKids: existingRsvp.numberOfKids,
         isPredefined: existingRsvp.isPredefined,
         askForPlusOne: existingRsvp.askForPlusOne,
+        askForKids: existingRsvp.askForKids,
+        maxNumberOfKids: existingRsvp.maxNumberOfKids,
         askForAccommodation: existingRsvp.askForAccommodation,
       });
       setInitialLoaded(true);
@@ -108,6 +115,7 @@ const RSVPForm = ({ nameFromUrl }: { nameFromUrl: string }) => {
           plusOneMealChoice: data.plusOneMealChoice || undefined,
           mealChoice: data.mealChoice || undefined,
           accommodation: data.accommodation,
+          numberOfKids: data.numberOfKids,
           isPredefined: data.isPredefined,
         });
         setSaveStatus("saved");
@@ -212,16 +220,12 @@ const RSVPForm = ({ nameFromUrl }: { nameFromUrl: string }) => {
           </div>
 
           {/* Guest names */}
-          <div className="mb-6">
-            <label className="block text-foreground text-sm font-medium mb-3">
-              Guests
-            </label>
-            <div className="wedding-input w-full bg-navy-light/50 cursor-default mb-3">
-              {rsvp.name}
-            </div>
-            {rsvp.guests &&
-              rsvp.guests.length > 0 &&
-              rsvp.guests.map((guest, index) => (
+          {rsvp.guests && rsvp.guests.length > 0 && (
+            <div className="mb-6">
+              <label className="block text-foreground text-sm font-medium mb-3">
+                Guests
+              </label>
+              {rsvp.guests.map((guest, index) => (
                 <div
                   key={index}
                   className="wedding-input w-full bg-navy-light/50 cursor-default mb-3"
@@ -229,7 +233,8 @@ const RSVPForm = ({ nameFromUrl }: { nameFromUrl: string }) => {
                   {guest.name}
                 </div>
               ))}
-          </div>
+            </div>
+          )}
 
           {/* Attending */}
           <div className="mb-6">
@@ -285,7 +290,7 @@ const RSVPForm = ({ nameFromUrl }: { nameFromUrl: string }) => {
               transition={{ duration: 0.3 }}
               className="space-y-6"
             >
-              {rsvp.guests && rsvp.guests.length > 0 ? (
+
                 <div className="space-y-4">
                   <label className="block text-foreground text-sm font-medium mb-3">
                     Meal Preferences
@@ -311,8 +316,7 @@ const RSVPForm = ({ nameFromUrl }: { nameFromUrl: string }) => {
                     </div>
                   ))}
                 </div>
-              ) : (
-                <>
+
                   {!rsvp.isPredefined && rsvp.askForPlusOne !== false && (
                     <div>
                       <label className="flex items-center gap-3 cursor-pointer group">
@@ -381,29 +385,26 @@ const RSVPForm = ({ nameFromUrl }: { nameFromUrl: string }) => {
                     </motion.div>
                   )}
 
-                  <div>
-                    <label className="block text-foreground text-sm font-medium mb-2">
-                      Meal Preference
-                    </label>
-                    <select
-                      value={rsvp.mealChoice}
-                      onChange={(e) =>
-                        updateRsvp({ mealChoice: e.target.value })
-                      }
-                      className="wedding-input w-full appearance-none cursor-pointer bg-navy-light"
-                    >
-                      {mealOptions.map((option) => (
-                        <option
-                          key={option.value}
-                          value={option.value}
-                          className="bg-navy-light"
-                        >
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </>
+              {/* Kids */}
+              {rsvp.askForKids && rsvp.maxNumberOfKids && rsvp.maxNumberOfKids > 0 && (
+                <div>
+                  <label className="block text-foreground text-sm font-medium mb-2">
+                    How many kids will you bring?
+                  </label>
+                  <select
+                    value={rsvp.numberOfKids}
+                    onChange={(e) =>
+                      updateRsvp({ numberOfKids: parseInt(e.target.value) })
+                    }
+                    className="wedding-input w-full appearance-none cursor-pointer bg-navy-light"
+                  >
+                    {Array.from({ length: rsvp.maxNumberOfKids + 1 }, (_, i) => (
+                      <option key={i} value={i} className="bg-navy-light">
+                        {i}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               )}
 
               {/* Accommodation */}

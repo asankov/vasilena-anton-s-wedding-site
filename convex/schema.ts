@@ -21,6 +21,9 @@ export default defineSchema({
     submitted: v.boolean(),
     isPredefined: v.boolean(),
     askForPlusOne: v.boolean(),
+    askForKids: v.boolean(),
+    maxNumberOfKids: v.number(),
+    numberOfKids: v.number(),
     askForAccommodation: v.boolean(),
   }).index("by_name", ["name"]),
 });

@@ -1,7 +1,7 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { Loader2, Users, Check, X, UtensilsCrossed, Hotel, Plus, Trash2, UserPlus, Copy } from "lucide-react";
+import { Loader2, Users, Check, X, UtensilsCrossed, Hotel, Plus, Trash2, UserPlus, Copy, Pencil } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const mealLabels: Record<string, string> = {
@@ -15,12 +15,21 @@ const mealLabels: Record<string, string> = {
 const Admin = () => {
   const rsvps = useQuery(api.rsvps.getAll);
   const createInvite = useMutation(api.rsvps.createInvite);
+  const updateInviteMutation = useMutation(api.rsvps.updateInvite);
 
   const [showInviteForm, setShowInviteForm] = useState(false);
-  const [inviteName, setInviteName] = useState("");
+  const [editingName, setEditingName] = useState<string | null>(null);
+  const [editPlusOne, setEditPlusOne] = useState(false);
+  const [editKids, setEditKids] = useState(false);
+  const [editMaxKids, setEditMaxKids] = useState(0);
+  const [editAccommodation, setEditAccommodation] = useState(false);
+  const [editLoading, setEditLoading] = useState(false);
+  const [inviteSlug, setInviteSlug] = useState("");
   const [guestNames, setGuestNames] = useState<string[]>([]);
   const [newGuestName, setNewGuestName] = useState("");
   const [askForPlusOne, setAskForPlusOne] = useState(true);
+  const [askForKids, setAskForKids] = useState(false);
+  const [maxNumberOfKids, setMaxNumberOfKids] = useState(3);
   const [askForAccommodation, setAskForAccommodation] = useState(true);
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [inviteLoading, setInviteLoading] = useState(false);
@@ -39,24 +48,32 @@ const Admin = () => {
   };
 
   const handleCreateInvite = async () => {
-    const name = inviteName.trim();
-    if (!name) {
-      setInviteError("Invite name is required");
+    const slug = inviteSlug.trim();
+    if (!slug) {
+      setInviteError("Invite slug is required");
+      return;
+    }
+    if (guestNames.length === 0) {
+      setInviteError("At least one guest is required");
       return;
     }
     setInviteLoading(true);
     setInviteError(null);
     try {
       await createInvite({
-        name,
-        guests: guestNames.length > 0 ? guestNames : undefined,
+        name: slug,
+        guests: guestNames,
         askForPlusOne,
+        askForKids,
+        maxNumberOfKids: askForKids ? maxNumberOfKids : 0,
         askForAccommodation,
       });
-      setInviteName("");
+      setInviteSlug("");
       setGuestNames([]);
       setNewGuestName("");
       setAskForPlusOne(true);
+      setAskForKids(false);
+      setMaxNumberOfKids(3);
       setAskForAccommodation(true);
       setShowInviteForm(false);
     } catch (err) {
@@ -75,6 +92,33 @@ const Admin = () => {
     navigator.clipboard.writeText(getInviteLink(name));
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const startEditing = (r: { name: string; askForPlusOne: boolean; askForKids: boolean; maxNumberOfKids: number; askForAccommodation: boolean }) => {
+    setEditingName(r.name);
+    setEditPlusOne(r.askForPlusOne);
+    setEditKids(r.askForKids);
+    setEditMaxKids(r.maxNumberOfKids);
+    setEditAccommodation(r.askForAccommodation);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingName) return;
+    setEditLoading(true);
+    try {
+      await updateInviteMutation({
+        name: editingName,
+        askForPlusOne: editPlusOne,
+        askForKids: editKids,
+        maxNumberOfKids: editKids ? editMaxKids : 0,
+        askForAccommodation: editAccommodation,
+      });
+      setEditingName(null);
+    } catch (err) {
+      console.error("Failed to update invite:", err);
+    } finally {
+      setEditLoading(false);
+    }
   };
 
   if (rsvps === undefined) {
@@ -181,23 +225,23 @@ const Admin = () => {
 
               <div>
                 <label className="block text-foreground text-sm font-medium mb-2">
-                  Invite Name
+                  Invite Slug
                 </label>
                 <input
                   type="text"
-                  value={inviteName}
-                  onChange={(e) => setInviteName(e.target.value)}
+                  value={inviteSlug}
+                  onChange={(e) => setInviteSlug(e.target.value)}
                   className="wedding-input w-full"
-                  placeholder="e.g. The Smiths, or John Doe"
+                  placeholder="e.g. the-smiths, john-doe"
                 />
                 <p className="text-foreground/50 text-xs mt-1">
-                  This is the lookup key used in the invite link (?name=...)
+                  ID used in the invite link (?name=...)
                 </p>
               </div>
 
               <div>
                 <label className="block text-foreground text-sm font-medium mb-2">
-                  Guest Names (optional, for couples/groups)
+                  Guests
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -232,7 +276,7 @@ const Admin = () => {
                   </div>
                 )}
                 <p className="text-foreground/50 text-xs mt-1">
-                  Leave empty for single guests. Add names for couples/groups — they'll see pre-filled names and choose meals individually.
+                  Add at least one guest name. For couples/groups, add all names.
                 </p>
               </div>
 
@@ -250,6 +294,30 @@ const Admin = () => {
                     />
                     <span className="text-foreground text-sm">Ask for plus one</span>
                   </label>
+                  <div>
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={askForKids}
+                        onChange={(e) => setAskForKids(e.target.checked)}
+                        className="w-4 h-4 accent-primary"
+                      />
+                      <span className="text-foreground text-sm">Ask for kids</span>
+                    </label>
+                    {askForKids && (
+                      <div className="ml-7 mt-2 flex items-center gap-2">
+                        <label className="text-foreground/70 text-xs">Max kids:</label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={10}
+                          value={maxNumberOfKids}
+                          onChange={(e) => setMaxNumberOfKids(Math.max(1, parseInt(e.target.value) || 1))}
+                          className="wedding-input w-20 text-sm py-1 px-2"
+                        />
+                      </div>
+                    )}
+                  </div>
                   <label className="flex items-center gap-3 cursor-pointer">
                     <input
                       type="checkbox"
@@ -266,10 +334,12 @@ const Admin = () => {
                 <button
                   onClick={() => {
                     setShowInviteForm(false);
-                    setInviteName("");
+                    setInviteSlug("");
                     setGuestNames([]);
                     setNewGuestName("");
                     setAskForPlusOne(true);
+                    setAskForKids(false);
+                    setMaxNumberOfKids(3);
                     setAskForAccommodation(true);
                     setInviteError(null);
                   }}
@@ -279,7 +349,7 @@ const Admin = () => {
                 </button>
                 <button
                   onClick={handleCreateInvite}
-                  disabled={inviteLoading || !inviteName.trim()}
+                  disabled={inviteLoading || !inviteSlug.trim() || guestNames.length === 0}
                   className="wedding-button text-sm px-4 py-2 disabled:opacity-50"
                 >
                   {inviteLoading ? (
@@ -342,11 +412,13 @@ const Admin = () => {
                 <th className="pb-3 text-foreground/60 font-medium hidden md:table-cell">Meals</th>
                 <th className="pb-3 text-foreground/60 font-medium hidden md:table-cell">Accommodation</th>
                 <th className="pb-3 text-foreground/60 font-medium">Link</th>
+                <th className="pb-3"></th>
               </tr>
             </thead>
             <tbody>
               {rsvps.map((r) => (
-                <tr key={r._id} className="border-b border-primary/10">
+                <React.Fragment key={r._id}>
+                <tr className="border-b border-primary/10">
                   <td className="py-3 text-foreground">
                     {r.name}
                     {r.isPredefined && (
@@ -413,7 +485,90 @@ const Admin = () => {
                       {copiedId === r._id ? "Copied!" : "Copy"}
                     </button>
                   </td>
+                  <td className="py-3">
+                    <button
+                      onClick={() => startEditing(r)}
+                      className="text-foreground/30 hover:text-primary transition-colors"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                  </td>
                 </tr>
+                {editingName === r.name && (
+                  <tr className="border-b border-primary/10">
+                    <td colSpan={7} className="py-3">
+                      <div className="bg-navy-light/30 rounded-lg p-4 space-y-3">
+                        <p className="text-sm font-medium text-foreground">Edit Template: {r.name}</p>
+                        <div className="space-y-2">
+                          <label className="flex items-center gap-3 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={editPlusOne}
+                              onChange={(e) => setEditPlusOne(e.target.checked)}
+                              className="w-4 h-4 accent-primary"
+                            />
+                            <span className="text-foreground text-sm">Ask for plus one</span>
+                          </label>
+                          <div>
+                            <label className="flex items-center gap-3 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={editKids}
+                                onChange={(e) => setEditKids(e.target.checked)}
+                                className="w-4 h-4 accent-primary"
+                              />
+                              <span className="text-foreground text-sm">Ask for kids</span>
+                            </label>
+                            {editKids && (
+                              <div className="ml-7 mt-2 flex items-center gap-2">
+                                <label className="text-foreground/70 text-xs">Max kids:</label>
+                                <input
+                                  type="number"
+                                  min={1}
+                                  max={10}
+                                  value={editMaxKids}
+                                  onChange={(e) => setEditMaxKids(Math.max(1, parseInt(e.target.value) || 1))}
+                                  className="wedding-input w-20 text-sm py-1 px-2"
+                                />
+                              </div>
+                            )}
+                          </div>
+                          <label className="flex items-center gap-3 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={editAccommodation}
+                              onChange={(e) => setEditAccommodation(e.target.checked)}
+                              className="w-4 h-4 accent-primary"
+                            />
+                            <span className="text-foreground text-sm">Ask for accommodation</span>
+                          </label>
+                        </div>
+                        <div className="flex gap-2 justify-end">
+                          <button
+                            onClick={() => setEditingName(null)}
+                            className="px-3 py-1.5 text-sm text-foreground/60 hover:text-foreground transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={handleSaveEdit}
+                            disabled={editLoading}
+                            className="wedding-button text-sm px-4 py-1.5 disabled:opacity-50"
+                          >
+                            {editLoading ? (
+                              <span className="flex items-center gap-2">
+                                <Loader2 className="w-3 h-3 animate-spin" /> Saving...
+                              </span>
+                            ) : (
+                              "Save"
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                </React.Fragment>
               ))}
             </tbody>
           </table>
