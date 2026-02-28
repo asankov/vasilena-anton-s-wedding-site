@@ -1,8 +1,26 @@
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { Check, X, Loader2 } from "lucide-react";
-import { RSVPData } from "../../types/rsvp";
-import { submitRSVP, getRSVPByName, deleteRSVP } from "../../services/rsvpApi";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+
+interface Guest {
+  name: string;
+  mealChoice: string;
+}
+
+interface RSVPFormData {
+  name: string;
+  guests?: Guest[];
+  attending: boolean | null;
+  plusOne: boolean;
+  plusOneName: string;
+  plusOneMealChoice: string;
+  mealChoice: string;
+  accommodation: boolean;
+  submitted: boolean;
+  isPredefined?: boolean;
+}
 
 const mealOptions = [
   { value: "", label: "Select your meal preference" },
@@ -14,7 +32,7 @@ const mealOptions = [
 ];
 
 const RSVPSection = () => {
-  const [rsvp, setRsvp] = useState<RSVPData>({
+  const [rsvp, setRsvp] = useState<RSVPFormData>({
     name: "",
     attending: null,
     plusOne: false,
@@ -26,40 +44,44 @@ const RSVPSection = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isLoadingInitial, setIsLoadingInitial] = useState(true);
 
-  // Load from backend on mount
+  // Get name from URL query parameter
+  const urlParams = new URLSearchParams(window.location.search);
+  const nameFromUrl = urlParams.get("name");
+
+  // Convex query - reactively fetches RSVP by name
+  const existingRsvp = useQuery(
+    api.rsvps.getByName,
+    nameFromUrl ? { name: nameFromUrl } : "skip"
+  );
+
+  // Convex mutation
+  const submitRsvpMutation = useMutation(api.rsvps.submit);
+
+  // Sync Convex data into local state when it loads
   useEffect(() => {
-    const loadRSVP = async () => {
-      try {
-        // Try to get name from URL query parameter first
-        const urlParams = new URLSearchParams(window.location.search);
-        const nameFromUrl = urlParams.get("name");
-
-        // Fall back to localStorage if no URL parameter
-        const savedName = nameFromUrl;
-        // || localStorage.getItem("wedding-rsvp-name");
-
-        if (savedName) {
-          const response = await getRSVPByName(savedName);
-          if (response.success && response.data) {
-            setRsvp(response.data);
-          }
-        }
-      } catch (err) {
-        console.error("Failed to load RSVP:", err);
-      } finally {
-        setIsLoadingInitial(false);
-      }
-    };
-
-    loadRSVP();
-  }, []);
+    if (existingRsvp) {
+      setRsvp({
+        name: existingRsvp.name,
+        guests: existingRsvp.guests,
+        attending: existingRsvp.attending,
+        plusOne: existingRsvp.plusOne,
+        plusOneName: existingRsvp.plusOneName,
+        plusOneMealChoice: existingRsvp.plusOneMealChoice,
+        mealChoice: existingRsvp.mealChoice,
+        accommodation: existingRsvp.accommodation,
+        submitted: existingRsvp.submitted,
+        isPredefined: existingRsvp.isPredefined,
+      });
+    } else if (existingRsvp === null && nameFromUrl) {
+      // Query returned null - no RSVP found, just set the name
+      setRsvp((prev) => ({ ...prev, name: nameFromUrl }));
+    }
+  }, [existingRsvp, nameFromUrl]);
 
   // Update local state
-  const updateRsvp = (updates: Partial<RSVPData>) => {
-    const newRsvp = { ...rsvp, ...updates };
-    setRsvp(newRsvp);
+  const updateRsvp = (updates: Partial<RSVPFormData>) => {
+    setRsvp((prev) => ({ ...prev, ...updates }));
     setError(null);
   };
 
@@ -77,25 +99,52 @@ const RSVPSection = () => {
     setError(null);
 
     try {
-      const response = await submitRSVP({
+      // Validate
+      if (!rsvp.name) {
+        setError("Name is required");
+        return;
+      }
+      if (rsvp.attending === null) {
+        setError("Please indicate if you will be attending");
+        return;
+      }
+
+      if (rsvp.attending) {
+        if (rsvp.guests && rsvp.guests.length > 0) {
+          const missingMeals = rsvp.guests.filter((g) => !g.mealChoice);
+          if (missingMeals.length > 0) {
+            setError("Meal preferences are required for all guests");
+            return;
+          }
+        } else {
+          if (!rsvp.mealChoice) {
+            setError("Meal preference is required");
+            return;
+          }
+          if (rsvp.plusOne && !rsvp.plusOneName) {
+            setError("Plus one name is required");
+            return;
+          }
+          if (rsvp.plusOne && !rsvp.plusOneMealChoice) {
+            setError("Plus one meal preference is required");
+            return;
+          }
+        }
+      }
+
+      await submitRsvpMutation({
         name: rsvp.name,
         guests: rsvp.guests,
-        attending: rsvp.attending!,
+        attending: rsvp.attending,
         plusOne: rsvp.plusOne,
-        plusOneName: rsvp.plusOneName,
-        plusOneMealChoice: rsvp.plusOneMealChoice,
-        mealChoice: rsvp.mealChoice,
+        plusOneName: rsvp.plusOneName || undefined,
+        plusOneMealChoice: rsvp.plusOneMealChoice || undefined,
+        mealChoice: rsvp.mealChoice || undefined,
         accommodation: rsvp.accommodation,
         isPredefined: rsvp.isPredefined,
       });
 
-      if (response.success && response.data) {
-        setRsvp(response.data);
-        // Save name for future lookups
-        localStorage.setItem("wedding-rsvp-name", rsvp.name);
-      } else {
-        setError(response.message || "Failed to submit RSVP");
-      }
+      setRsvp((prev) => ({ ...prev, submitted: true }));
     } catch (err) {
       setError("An unexpected error occurred. Please try again.");
       console.error("RSVP submission error:", err);
@@ -105,13 +154,11 @@ const RSVPSection = () => {
   };
 
   const resetForm = () => {
-    // Keep all existing data but mark as not submitted
-    // This allows the user to update their response
     updateRsvp({ submitted: false });
   };
 
-  // Show loading state during initial load
-  if (isLoadingInitial) {
+  // Show loading state while Convex query is loading
+  if (nameFromUrl && existingRsvp === undefined) {
     return (
       <section id="rsvp" className="wedding-section">
         <div className="text-center max-w-lg mx-auto">
@@ -144,7 +191,6 @@ const RSVPSection = () => {
             </p>
             {rsvp.attending && (
               <div className="text-left space-y-2 bg-navy-light/30 rounded-lg p-4 mb-6">
-                {/* Display guests for couples/pre-defined guests */}
                 {rsvp.guests && rsvp.guests.length > 0 ? (
                   <>
                     <p className="text-sm text-foreground/70 mb-3">
@@ -164,7 +210,6 @@ const RSVPSection = () => {
                   </>
                 ) : (
                   <>
-                    {/* Display single guest */}
                     <p className="text-sm text-foreground/70">
                       <span className="text-primary">Name:</span> {rsvp.name}
                     </p>
@@ -228,7 +273,6 @@ const RSVPSection = () => {
 
           {/* Name - Display differently for couples vs single guests */}
           {rsvp.guests && rsvp.guests.length > 0 ? (
-            /* Display guest names for couples */
             <div className="mb-6">
               <label className="block text-foreground text-sm font-medium mb-3">
                 Guests
@@ -242,7 +286,6 @@ const RSVPSection = () => {
               </div>
             </div>
           ) : (
-            /* Editable name field for single guests */
             <div className="mb-6">
               <label className="block text-foreground text-sm font-medium mb-2">
                 Your Name
@@ -292,7 +335,7 @@ const RSVPSection = () => {
             </div>
           </div>
 
-          {/* Additional options if attending - only show when attending === true */}
+          {/* Additional options if attending */}
           {rsvp.attending === true && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
@@ -300,9 +343,7 @@ const RSVPSection = () => {
               transition={{ duration: 0.3 }}
               className="space-y-6"
             >
-              {/* Meal Selection - Different for predefined guests vs single guests */}
               {rsvp.guests && rsvp.guests.length > 0 ? (
-                /* Multiple Guests (Couples) - Show meal selection for each */
                 <div className="space-y-4">
                   <label className="block text-foreground text-sm font-medium mb-3">
                     Meal Preferences
@@ -318,11 +359,7 @@ const RSVPSection = () => {
                         disabled={loading}
                       >
                         {mealOptions.map((option) => (
-                          <option
-                            key={option.value}
-                            value={option.value}
-                            className="bg-navy-light"
-                          >
+                          <option key={option.value} value={option.value} className="bg-navy-light">
                             {option.label}
                           </option>
                         ))}
@@ -331,9 +368,7 @@ const RSVPSection = () => {
                   ))}
                 </div>
               ) : (
-                /* Single Guest - Show plus one option and meal selection */
                 <>
-                  {/* Plus One - Only show if not predefined */}
                   {!rsvp.isPredefined && (
                     <div>
                       <label className="flex items-center gap-3 cursor-pointer group">
@@ -356,7 +391,6 @@ const RSVPSection = () => {
                     </div>
                   )}
 
-                  {/* Plus One Details */}
                   {rsvp.plusOne && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
@@ -390,11 +424,7 @@ const RSVPSection = () => {
                           disabled={loading}
                         >
                           {mealOptions.map((option) => (
-                            <option
-                              key={option.value}
-                              value={option.value}
-                              className="bg-navy-light"
-                            >
+                            <option key={option.value} value={option.value} className="bg-navy-light">
                               {option.label}
                             </option>
                           ))}
@@ -403,7 +433,6 @@ const RSVPSection = () => {
                     </motion.div>
                   )}
 
-                  {/* Meal Choice for single guest */}
                   <div>
                     <label className="block text-foreground text-sm font-medium mb-2">
                       Meal Preference
@@ -416,11 +445,7 @@ const RSVPSection = () => {
                       disabled={loading}
                     >
                       {mealOptions.map((option) => (
-                        <option
-                          key={option.value}
-                          value={option.value}
-                          className="bg-navy-light"
-                        >
+                        <option key={option.value} value={option.value} className="bg-navy-light">
                           {option.label}
                         </option>
                       ))}
@@ -438,9 +463,7 @@ const RSVPSection = () => {
                         ? "border-primary bg-primary"
                         : "border-primary/30 group-hover:border-primary/50"
                     }`}
-                    onClick={() =>
-                      updateRsvp({ accommodation: !rsvp.accommodation })
-                    }
+                    onClick={() => updateRsvp({ accommodation: !rsvp.accommodation })}
                   >
                     {rsvp.accommodation && (
                       <Check className="w-4 h-4 text-primary-foreground" />
@@ -464,10 +487,9 @@ const RSVPSection = () => {
               loading ||
               rsvp.attending === null ||
               !rsvp.name ||
-              // Only validate meal choices if attending === true
               (rsvp.attending === true && rsvp.guests && rsvp.guests.length > 0
-                ? rsvp.guests.some(g => !g.mealChoice)
-                : (rsvp.attending === true && !rsvp.mealChoice)) ||
+                ? rsvp.guests.some((g) => !g.mealChoice)
+                : rsvp.attending === true && !rsvp.mealChoice) ||
               (rsvp.plusOne && (!rsvp.plusOneName || !rsvp.plusOneMealChoice))
             }
             className="wedding-button w-full mt-8 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
