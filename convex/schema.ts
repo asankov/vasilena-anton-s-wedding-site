@@ -19,7 +19,6 @@ export default defineSchema({
     mealChoice: v.string(),
     accommodation: v.boolean(),
     submitted: v.boolean(),
-    isPredefined: v.boolean(),
     askForPlusOne: v.boolean(),
     askForKids: v.boolean(),
     maxNumberOfKids: v.number(),

@@ -27,9 +27,9 @@ const Admin = () => {
   const [inviteSlug, setInviteSlug] = useState("");
   const [guestNames, setGuestNames] = useState<string[]>([]);
   const [newGuestName, setNewGuestName] = useState("");
-  const [askForPlusOne, setAskForPlusOne] = useState(true);
+  const [askForPlusOne, setAskForPlusOne] = useState(false);
   const [askForKids, setAskForKids] = useState(false);
-  const [maxNumberOfKids, setMaxNumberOfKids] = useState(3);
+  const [maxNumberOfKids, setMaxNumberOfKids] = useState(2);
   const [askForAccommodation, setAskForAccommodation] = useState(true);
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [inviteLoading, setInviteLoading] = useState(false);
@@ -421,11 +421,6 @@ const Admin = () => {
                 <tr className="border-b border-primary/10">
                   <td className="py-3 text-foreground">
                     {r.name}
-                    {r.isPredefined && (
-                      <span className="ml-2 text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">
-                        Pre-defined
-                      </span>
-                    )}
                   </td>
                   <td className="py-3">
                     {r.attending === true && (

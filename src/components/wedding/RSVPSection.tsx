@@ -19,7 +19,6 @@ interface RSVPFormData {
   mealChoice: string;
   accommodation: boolean;
   numberOfKids: number;
-  isPredefined?: boolean;
   askForPlusOne?: boolean;
   askForKids?: boolean;
   maxNumberOfKids?: number;
@@ -85,7 +84,6 @@ const RSVPForm = ({ name: nameFromUrl }: { name: string }) => {
         mealChoice: existingRsvp.mealChoice,
         accommodation: existingRsvp.accommodation,
         numberOfKids: existingRsvp.numberOfKids,
-        isPredefined: existingRsvp.isPredefined,
         askForPlusOne: existingRsvp.askForPlusOne,
         askForKids: existingRsvp.askForKids,
         maxNumberOfKids: existingRsvp.maxNumberOfKids,
@@ -116,7 +114,6 @@ const RSVPForm = ({ name: nameFromUrl }: { name: string }) => {
           mealChoice: data.mealChoice || undefined,
           accommodation: data.accommodation,
           numberOfKids: data.numberOfKids,
-          isPredefined: data.isPredefined,
         });
         setSaveStatus("saved");
         setTimeout(() => setSaveStatus("idle"), 2000);
@@ -317,7 +314,7 @@ const RSVPForm = ({ name: nameFromUrl }: { name: string }) => {
                   ))}
                 </div>
 
-                  {!rsvp.isPredefined && rsvp.askForPlusOne !== false && (
+                  {rsvp.askForPlusOne !== false && (
                     <div>
                       <label className="flex items-center gap-3 cursor-pointer group">
                         <div

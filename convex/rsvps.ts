@@ -37,7 +37,6 @@ export const submit = mutation({
     mealChoice: v.optional(v.string()),
     accommodation: v.boolean(),
     numberOfKids: v.optional(v.number()),
-    isPredefined: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     // Check if RSVP already exists for this name
@@ -57,7 +56,6 @@ export const submit = mutation({
       accommodation: args.accommodation,
       numberOfKids: args.numberOfKids ?? 0,
       submitted: args.attending !== null,
-      isPredefined: args.isPredefined ?? false,
     };
 
     if (existing) {
@@ -110,7 +108,6 @@ export const createInvite = mutation({
       mealChoice: "",
       accommodation: false,
       submitted: false,
-      isPredefined: true,
       askForPlusOne: args.askForPlusOne,
       askForKids: args.askForKids,
       maxNumberOfKids: args.maxNumberOfKids,
