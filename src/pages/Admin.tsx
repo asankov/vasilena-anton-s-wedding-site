@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { Loader2, Users, Check, X, UtensilsCrossed, Hotel, Plus, Trash2, UserPlus, Copy, Pencil, Lock } from "lucide-react";
+import { Loader2, Users, Check, X, UtensilsCrossed, Hotel, Plus, Trash2, UserPlus, Copy, Pencil, Lock, QrCode, Download } from "lucide-react";
+import { QRCodeCanvas } from "qrcode.react";
 import { Link } from "react-router-dom";
 
 const mealLabels: Record<string, string> = {
@@ -112,6 +113,7 @@ const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLo
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [inviteLoading, setInviteLoading] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [qrName, setQrName] = useState<string | null>(null);
 
   const addGuestName = () => {
     const trimmed = newGuestName.trim();
@@ -175,6 +177,16 @@ const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLo
     navigator.clipboard.writeText(getInviteLink(name));
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const downloadQr = () => {
+    const canvas = document.querySelector("#qr-canvas canvas") as HTMLCanvasElement | null;
+    if (!canvas || !qrName) return;
+    const url = canvas.toDataURL("image/png");
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `qr-${qrName}.png`;
+    a.click();
   };
 
   const startEditing = (r: { name: string; askForPlusOne: boolean; askForKids: boolean; maxNumberOfKids: number; askForAccommodation: boolean }) => {
@@ -567,14 +579,24 @@ const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLo
                     )}
                   </td>
                   <td className="py-3">
-                    <button
-                      onClick={() => copyLink(r.name, r._id)}
-                      className="text-xs flex items-center gap-1 text-foreground/50 hover:text-primary transition-colors"
-                      title={getInviteLink(r.name)}
-                    >
-                      <Copy className="w-3 h-3" />
-                      {copiedId === r._id ? "Copied!" : "Copy"}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => copyLink(r.name, r._id)}
+                        className="text-xs flex items-center gap-1 text-foreground/50 hover:text-primary transition-colors"
+                        title={getInviteLink(r.name)}
+                      >
+                        <Copy className="w-3 h-3" />
+                        {copiedId === r._id ? "Copied!" : "Copy"}
+                      </button>
+                      <button
+                        onClick={() => setQrName(r.name)}
+                        className="text-xs flex items-center gap-1 text-foreground/50 hover:text-primary transition-colors"
+                        title="Show QR Code"
+                      >
+                        <QrCode className="w-3 h-3" />
+                        QR
+                      </button>
+                    </div>
                   </td>
                   <td className="py-3">
                     <button
@@ -665,6 +687,39 @@ const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLo
           </table>
         </div>
       </div>
+
+      {/* QR Code Modal */}
+      {qrName && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50"
+          onClick={() => setQrName(null)}
+        >
+          <div
+            className="wedding-card max-w-sm w-full mx-4 flex flex-col items-center gap-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-serif text-primary">QR Code</h3>
+            <p className="text-sm text-foreground/60 break-all text-center">{getInviteLink(qrName)}</p>
+            <div id="qr-canvas" className="bg-white p-4 rounded-lg">
+              <QRCodeCanvas value={getInviteLink(qrName)} size={200} />
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={downloadQr}
+                className="wedding-button text-sm px-4 py-2 flex items-center gap-2"
+              >
+                <Download className="w-4 h-4" /> Download PNG
+              </button>
+              <button
+                onClick={() => setQrName(null)}
+                className="px-4 py-2 text-sm text-foreground/60 hover:text-foreground transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
