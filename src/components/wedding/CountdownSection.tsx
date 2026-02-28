@@ -54,7 +54,7 @@ const CountdownSection = () => {
         className="text-center">
 
         <h2 className="wedding-subheading mb-4">Save the Date</h2>
-        <p className="wedding-heading mb-12">August 15, 2025</p>
+        <p className="wedding-heading mb-12">August 15, 2026</p>
 
         <div className="wedding-divider mx-auto" />
 
