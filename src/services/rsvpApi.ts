@@ -22,8 +22,8 @@ const mockRSVPs: RSVPData[] = [
     id: "1",
     name: "xxx",
     guests: [
-      { name: "Александър Коледжиков", mealChoice: "beef" },
-      { name: "Юлия Коледжикова", mealChoice: "chicken" },
+      { name: "test", mealChoice: "beef" },
+      { name: "test", mealChoice: "chicken" },
     ],
     attending: true,
     plusOne: false,
@@ -41,8 +41,8 @@ const mockRSVPs: RSVPData[] = [
     id: "2",
     name: "yyy",
     guests: [
-      { name: "Сиси от кросфита", mealChoice: "fish" },
-      { name: "мъжа и", mealChoice: "vegetarian" },
+      { name: "test", mealChoice: "fish" },
+      { name: "test2", mealChoice: "vegetarian" },
     ],
     attending: null,
     plusOne: false,
