@@ -695,7 +695,7 @@ const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLo
           onClick={() => setQrName(null)}
         >
           <div
-            className="wedding-card max-w-sm w-full mx-4 flex flex-col items-center gap-4"
+            className="wedding-card max-w-lg w-full mx-4 flex flex-col items-center gap-4"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-serif text-primary">QR Code</h3>
@@ -709,6 +709,23 @@ const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLo
                 className="wedding-button text-sm px-4 py-2 flex items-center gap-2"
               >
                 <Download className="w-4 h-4" /> Download PNG
+              </button>
+              <button
+                onClick={() => {
+                  const canvas = document.querySelector("#qr-canvas canvas") as HTMLCanvasElement | null;
+                  if (!canvas) return;
+                  canvas.toBlob((blob) => {
+                    if (!blob) return;
+                    navigator.clipboard.write([
+                      new ClipboardItem({ "image/png": blob }),
+                    ]);
+                    setCopiedId("qr-modal");
+                    setTimeout(() => setCopiedId(null), 2000);
+                  });
+                }}
+                className="wedding-button text-sm px-4 py-2 flex items-center gap-2"
+              >
+                <Copy className="w-4 h-4" /> {copiedId === "qr-modal" ? "Copied!" : "Copy QR"}
               </button>
               <button
                 onClick={() => setQrName(null)}
