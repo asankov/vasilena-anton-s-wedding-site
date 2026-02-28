@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { Loader2, Users, Check, X, UtensilsCrossed, Hotel, Plus, Trash2, UserPlus, Copy, Pencil } from "lucide-react";
+import { Loader2, Users, Check, X, UtensilsCrossed, Hotel, Plus, Trash2, UserPlus, Copy, Pencil, Lock } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const mealLabels: Record<string, string> = {
@@ -12,8 +12,86 @@ const mealLabels: Record<string, string> = {
   vegan: "Vegan Buddha Bowl",
 };
 
-const Admin = () => {
-  const rsvps = useQuery(api.rsvps.getAll);
+function useSessionToken() {
+  const [token, setToken] = useState<string | null>(
+    () => sessionStorage.getItem("adminToken")
+  );
+
+  const save = (newToken: string) => {
+    sessionStorage.setItem("adminToken", newToken);
+    setToken(newToken);
+  };
+
+  const clear = () => {
+    sessionStorage.removeItem("adminToken");
+    setToken(null);
+  };
+
+  return { token, save, clear };
+}
+
+const LoginForm = ({ onLogin }: { onLogin: (token: string) => void }) => {
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const login = useMutation(api.auth.login);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await login({ password });
+      onLogin(result.token);
+    } catch {
+      setError("Invalid password");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center px-4">
+      <div className="wedding-card w-full max-w-sm">
+        <div className="flex flex-col items-center mb-6">
+          <Lock className="w-8 h-8 text-primary mb-3" />
+          <h1 className="text-2xl font-serif text-primary">Admin Login</h1>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+              <p className="text-red-400 text-sm">{error}</p>
+            </div>
+          )}
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="wedding-input w-full"
+            placeholder="Enter admin password"
+            autoFocus
+          />
+          <button
+            type="submit"
+            disabled={loading || !password}
+            className="wedding-button w-full py-2 disabled:opacity-50"
+          >
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" /> Logging in...
+              </span>
+            ) : (
+              "Log in"
+            )}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLogout: () => void }) => {
+  const rsvps = useQuery(api.rsvps.getAll, { sessionToken });
   const createInvite = useMutation(api.rsvps.createInvite);
   const updateInviteMutation = useMutation(api.rsvps.updateInvite);
 
@@ -61,6 +139,7 @@ const Admin = () => {
     setInviteError(null);
     try {
       await createInvite({
+        sessionToken,
         name: slug,
         guests: guestNames,
         askForPlusOne,
@@ -77,6 +156,10 @@ const Admin = () => {
       setAskForAccommodation(true);
       setShowInviteForm(false);
     } catch (err) {
+      if (err instanceof Error && err.message === "Unauthorized") {
+        onLogout();
+        return;
+      }
       setInviteError(err instanceof Error ? err.message : "Failed to create invite");
     } finally {
       setInviteLoading(false);
@@ -107,6 +190,7 @@ const Admin = () => {
     setEditLoading(true);
     try {
       await updateInviteMutation({
+        sessionToken,
         name: editingName,
         askForPlusOne: editPlusOne,
         askForKids: editKids,
@@ -115,6 +199,10 @@ const Admin = () => {
       });
       setEditingName(null);
     } catch (err) {
+      if (err instanceof Error && err.message === "Unauthorized") {
+        onLogout();
+        return;
+      }
       console.error("Failed to update invite:", err);
     } finally {
       setEditLoading(false);
@@ -167,9 +255,17 @@ const Admin = () => {
       <div className="border-b border-primary/20 bg-navy-light/30">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <h1 className="text-2xl font-serif text-primary">RSVP Admin</h1>
-          <Link to="/" className="text-sm text-foreground/60 hover:text-primary transition-colors">
-            Back to site
-          </Link>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={onLogout}
+              className="text-sm text-foreground/60 hover:text-red-400 transition-colors"
+            >
+              Log out
+            </button>
+            <Link to="/" className="text-sm text-foreground/60 hover:text-primary transition-colors">
+              Back to site
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -571,6 +667,34 @@ const Admin = () => {
       </div>
     </div>
   );
+};
+
+const Admin = () => {
+  const { token, save, clear } = useSessionToken();
+  const isValid = useQuery(
+    api.auth.validateSession,
+    token ? { token } : "skip"
+  );
+
+  // Still checking session validity
+  if (token && isValid === undefined) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Not logged in or session expired
+  if (!token || isValid === false) {
+    if (token && isValid === false) {
+      // Token was invalid, clear it
+      clear();
+    }
+    return <LoginForm onLogin={save} />;
+  }
+
+  return <AdminDashboard sessionToken={token} onLogout={clear} />;
 };
 
 export default Admin;
