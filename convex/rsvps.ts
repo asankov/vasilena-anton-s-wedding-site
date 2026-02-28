@@ -1,5 +1,15 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation, QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
+
+async function requireAdmin(ctx: QueryCtx, sessionToken: string) {
+  const session = await ctx.db
+    .query("adminSessions")
+    .withIndex("by_token", (q) => q.eq("token", sessionToken))
+    .first();
+  if (!session || session.expiresAt < Date.now()) {
+    throw new Error("Unauthorized");
+  }
+}
 
 export const getByName = query({
   args: { name: v.string() },
@@ -13,8 +23,9 @@ export const getByName = query({
 });
 
 export const getAll = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { sessionToken: v.string() },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx, args.sessionToken);
     return await ctx.db.query("rsvps").collect();
   },
 });
@@ -75,6 +86,7 @@ export const submit = mutation({
 
 export const createInvite = mutation({
   args: {
+    sessionToken: v.string(),
     name: v.string(),
     guests: v.array(v.string()),
     askForPlusOne: v.boolean(),
@@ -83,6 +95,7 @@ export const createInvite = mutation({
     askForAccommodation: v.boolean(),
   },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx, args.sessionToken);
     if (args.guests.length === 0) {
       throw new Error("At least one guest is required");
     }
@@ -119,6 +132,7 @@ export const createInvite = mutation({
 
 export const updateInvite = mutation({
   args: {
+    sessionToken: v.string(),
     name: v.string(),
     askForPlusOne: v.boolean(),
     askForKids: v.boolean(),
@@ -126,6 +140,7 @@ export const updateInvite = mutation({
     askForAccommodation: v.boolean(),
   },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx, args.sessionToken);
     const existing = await ctx.db
       .query("rsvps")
       .withIndex("by_name", (q) => q.eq("name", args.name))
@@ -143,8 +158,9 @@ export const updateInvite = mutation({
 });
 
 export const remove = mutation({
-  args: { name: v.string() },
+  args: { sessionToken: v.string(), name: v.string() },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx, args.sessionToken);
     const rsvp = await ctx.db
       .query("rsvps")
       .withIndex("by_name", (q) => q.eq("name", args.name))

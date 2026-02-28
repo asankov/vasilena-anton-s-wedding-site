@@ -25,4 +25,8 @@ export default defineSchema({
     numberOfKids: v.number(),
     askForAccommodation: v.boolean(),
   }).index("by_name", ["name"]),
+  adminSessions: defineTable({
+    token: v.string(),
+    expiresAt: v.number(),
+  }).index("by_token", ["token"]),
 });
