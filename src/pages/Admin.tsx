@@ -4,6 +4,8 @@ import { api } from "../../convex/_generated/api";
 import { Loader2, Users, Check, X, UtensilsCrossed, Hotel, Plus, Trash2, UserPlus, Copy, Pencil, Lock, QrCode, Download } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
 import { Link } from "react-router-dom";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import AccommodationMap from "@/components/admin/AccommodationMap";
 
 const mealLabels: Record<string, string> = {
   beef: "Beef Tenderloin",
@@ -281,7 +283,14 @@ const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLo
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <Tabs defaultValue="rsvp" className="w-full">
+          <TabsList className="mb-6 bg-navy-light/50">
+            <TabsTrigger value="rsvp">RSVP</TabsTrigger>
+            <TabsTrigger value="accommodation">Accommodation</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="rsvp" className="space-y-8">
         {/* Summary Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="wedding-card text-center">
@@ -686,6 +695,20 @@ const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLo
             </tbody>
           </table>
         </div>
+          </TabsContent>
+
+          <TabsContent value="accommodation">
+            <AccommodationMap
+              guests={needAccommodation.map((r) => ({
+                id: r._id,
+                name: r.name,
+                guestNames: r.guests && r.guests.length > 0
+                  ? r.guests.map((g) => g.name)
+                  : [r.name, ...(r.plusOne && r.plusOneName ? [r.plusOneName] : [])],
+              }))}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* QR Code Modal */}
