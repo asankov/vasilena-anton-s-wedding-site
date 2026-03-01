@@ -30,6 +30,7 @@ jobs:
       - run: npm run build
         env:
           VITE_BASE_PATH: /vasilena-anton-s-wedding-site/
+          VITE_CONVEX_URL: ${{ vars.VITE_CONVEX_URL }}
 
       - uses: actions/upload-pages-artifact@v3
         with:
