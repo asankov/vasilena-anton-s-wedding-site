@@ -9,6 +9,7 @@ export default defineSchema({
         v.object({
           name: v.string(),
           mealChoice: v.string(),
+          allergies: v.optional(v.string()),
         })
       )
     ),
@@ -16,6 +17,7 @@ export default defineSchema({
     plusOne: v.boolean(),
     plusOneName: v.string(),
     plusOneMealChoice: v.string(),
+    plusOneAllergies: v.optional(v.string()),
     mealChoice: v.string(),
     accommodation: v.boolean(),
     submitted: v.boolean(),

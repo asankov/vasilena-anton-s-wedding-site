@@ -6,14 +6,25 @@ import { QRCodeCanvas } from "qrcode.react";
 import { Link } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import AccommodationMap from "@/components/admin/AccommodationMap";
+import { decodeMealChoice } from "@/components/wedding/MealChoiceDialog";
 
-const mealLabels: Record<string, string> = {
-  beef: "Beef Tenderloin",
-  chicken: "Herb-Roasted Chicken",
-  fish: "Pan-Seared Salmon",
-  vegetarian: "Vegetarian Risotto",
-  vegan: "Vegan Buddha Bowl",
-};
+function formatMealChoice(value: string): string {
+  if (!value) return "—";
+  const choice = decodeMealChoice(value);
+  if (!choice) return value;
+  if (choice.type === "vegan") return "VEGAN";
+  const appetizer = choice.appetizer === "appetizer1"
+    ? "Телешки език"
+    : choice.appetizer === "appetizer2"
+    ? "Патладжан"
+    : "?";
+  const main = choice.main === "main1"
+    ? "Пилешки филенца"
+    : choice.main === "main2"
+    ? "Телешко"
+    : "?";
+  return `MEAT – ${appetizer} – ${main}`;
+}
 
 function useSessionToken() {
   const [token, setToken] = useState<string | null>(
@@ -97,6 +108,7 @@ const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLo
   const rsvps = useQuery(api.rsvps.getAll, { sessionToken });
   const createInvite = useMutation(api.rsvps.createInvite);
   const updateInviteMutation = useMutation(api.rsvps.updateInvite);
+  const removeInviteMutation = useMutation(api.rsvps.remove);
 
   const [showInviteForm, setShowInviteForm] = useState(false);
   const [editingName, setEditingName] = useState<string | null>(null);
@@ -115,6 +127,7 @@ const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLo
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [inviteLoading, setInviteLoading] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [confirmDeleteName, setConfirmDeleteName] = useState<string | null>(null);
   const [qrName, setQrName] = useState<string | null>(null);
 
   const addGuestName = () => {
@@ -292,7 +305,7 @@ const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLo
 
           <TabsContent value="rsvp" className="space-y-8">
         {/* Summary Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <div className="wedding-card text-center">
             <Users className="w-6 h-6 text-primary mx-auto mb-2" />
             <p className="text-3xl font-bold text-primary">{totalGuests}</p>
@@ -307,6 +320,11 @@ const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLo
             <X className="w-6 h-6 text-red-400 mx-auto mb-2" />
             <p className="text-3xl font-bold text-red-400">{declined.length}</p>
             <p className="text-sm text-foreground/60">Declined</p>
+          </div>
+          <div className="wedding-card text-center">
+            <Loader2 className="w-6 h-6 text-yellow-400 mx-auto mb-2" />
+            <p className="text-3xl font-bold text-yellow-400">{pending.length}</p>
+            <p className="text-sm text-foreground/60">Pending</p>
           </div>
           <div className="wedding-card text-center">
             <Hotel className="w-6 h-6 text-blue-400 mx-auto mb-2" />
@@ -493,7 +511,7 @@ const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLo
               {Object.entries(mealCounts).map(([meal, count]) => (
                 <div key={meal} className="bg-navy-light/30 rounded-lg p-3 text-center">
                   <p className="text-xl font-bold text-foreground">{count}</p>
-                  <p className="text-xs text-foreground/60">{mealLabels[meal] || meal}</p>
+                  <p className="text-xs text-foreground/60">{formatMealChoice(meal)}</p>
                 </div>
               ))}
             </div>
@@ -556,28 +574,32 @@ const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLo
                   </td>
                   <td className="py-3 text-foreground/70 hidden md:table-cell">
                     {r.guests && r.guests.length > 0 ? (
-                      <span>{r.guests.map((g) => g.name).join(", ")}</span>
+                      <div className="space-y-1">
+                        {r.guests.map((g, i) => (
+                          <div key={i}>{g.name}</div>
+                        ))}
+                      </div>
                     ) : (
-                      <span>
-                        {r.name}
-                        {r.plusOne && r.plusOneName ? `, ${r.plusOneName}` : ""}
-                      </span>
+                      <div className="space-y-1">
+                        <div>{r.name}</div>
+                        {r.plusOne && r.plusOneName && <div>{r.plusOneName}</div>}
+                      </div>
                     )}
                   </td>
                   <td className="py-3 text-foreground/70 hidden md:table-cell">
                     {r.guests && r.guests.length > 0 ? (
-                      <span>
-                        {r.guests
-                          .map((g) => mealLabels[g.mealChoice] || g.mealChoice || "—")
-                          .join(", ")}
-                      </span>
+                      <div className="space-y-1">
+                        {r.guests.map((g, i) => (
+                          <div key={i}>{formatMealChoice(g.mealChoice)}</div>
+                        ))}
+                      </div>
                     ) : (
-                      <span>
-                        {mealLabels[r.mealChoice] || r.mealChoice || "—"}
-                        {r.plusOne && r.plusOneMealChoice
-                          ? `, ${mealLabels[r.plusOneMealChoice] || r.plusOneMealChoice}`
-                          : ""}
-                      </span>
+                      <div className="space-y-1">
+                        <div>{formatMealChoice(r.mealChoice)}</div>
+                        {r.plusOne && r.plusOneMealChoice && (
+                          <div>{formatMealChoice(r.plusOneMealChoice)}</div>
+                        )}
+                      </div>
                     )}
                   </td>
                   <td className="py-3 hidden md:table-cell">
@@ -608,12 +630,40 @@ const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLo
                     </div>
                   </td>
                   <td className="py-3">
-                    <button
-                      onClick={() => startEditing(r)}
-                      className="text-foreground/30 hover:text-primary transition-colors"
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => startEditing(r)}
+                        className="text-foreground/30 hover:text-primary transition-colors"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      {confirmDeleteName === r.name ? (
+                        <>
+                          <button
+                            onClick={async () => {
+                              await removeInviteMutation({ sessionToken, name: r.name });
+                              setConfirmDeleteName(null);
+                            }}
+                            className="text-xs text-red-400 hover:text-red-300 transition-colors"
+                          >
+                            Confirm
+                          </button>
+                          <button
+                            onClick={() => setConfirmDeleteName(null)}
+                            className="text-xs text-foreground/40 hover:text-foreground transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmDeleteName(r.name)}
+                          className="text-foreground/30 hover:text-red-400 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
                 {editingName === r.name && (

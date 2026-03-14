@@ -38,6 +38,7 @@ export const submit = mutation({
         v.object({
           name: v.string(),
           mealChoice: v.string(),
+          allergies: v.optional(v.string()),
         })
       )
     ),
@@ -45,6 +46,7 @@ export const submit = mutation({
     plusOne: v.boolean(),
     plusOneName: v.optional(v.string()),
     plusOneMealChoice: v.optional(v.string()),
+    plusOneAllergies: v.optional(v.string()),
     mealChoice: v.optional(v.string()),
     accommodation: v.boolean(),
     numberOfKids: v.optional(v.number()),
@@ -63,6 +65,7 @@ export const submit = mutation({
       plusOne: args.plusOne,
       plusOneName: args.plusOneName ?? "",
       plusOneMealChoice: args.plusOneMealChoice ?? "",
+      plusOneAllergies: args.plusOneAllergies ?? "",
       mealChoice: args.mealChoice ?? "",
       accommodation: args.accommodation,
       numberOfKids: args.numberOfKids ?? 0,
