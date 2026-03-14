@@ -3,10 +3,12 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Check, X, Loader2 } from "lucide-react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import MealChoiceDialog from "./MealChoiceDialog";
 
 interface Guest {
   name: string;
   mealChoice: string;
+  allergies?: string;
 }
 
 interface RSVPFormData {
@@ -16,6 +18,7 @@ interface RSVPFormData {
   plusOne: boolean;
   plusOneName: string;
   plusOneMealChoice: string;
+  plusOneAllergies: string;
   mealChoice: string;
   accommodation: boolean;
   numberOfKids: number;
@@ -25,14 +28,6 @@ interface RSVPFormData {
   askForAccommodation?: boolean;
 }
 
-const mealOptions = [
-  { value: "", label: "Select your meal preference" },
-  { value: "beef", label: "Beef Tenderloin" },
-  { value: "chicken", label: "Herb-Roasted Chicken" },
-  { value: "fish", label: "Pan-Seared Salmon" },
-  { value: "vegetarian", label: "Vegetarian Risotto" },
-  { value: "vegan", label: "Vegan Buddha Bowl" },
-];
 
 const RSVPSection = () => {
   // Get name from URL query parameter
@@ -54,6 +49,7 @@ const RSVPForm = ({ name: nameFromUrl }: { name: string }) => {
     plusOne: false,
     plusOneName: "",
     plusOneMealChoice: "",
+    plusOneAllergies: "",
     mealChoice: "",
     accommodation: false,
     numberOfKids: 0,
@@ -81,6 +77,7 @@ const RSVPForm = ({ name: nameFromUrl }: { name: string }) => {
         plusOne: existingRsvp.plusOne,
         plusOneName: existingRsvp.plusOneName,
         plusOneMealChoice: existingRsvp.plusOneMealChoice,
+        plusOneAllergies: existingRsvp.plusOneAllergies ?? "",
         mealChoice: existingRsvp.mealChoice,
         accommodation: existingRsvp.accommodation,
         numberOfKids: existingRsvp.numberOfKids,
@@ -111,6 +108,7 @@ const RSVPForm = ({ name: nameFromUrl }: { name: string }) => {
           plusOne: data.plusOne,
           plusOneName: data.plusOneName || undefined,
           plusOneMealChoice: data.plusOneMealChoice || undefined,
+          plusOneAllergies: data.plusOneAllergies || undefined,
           mealChoice: data.mealChoice || undefined,
           accommodation: data.accommodation,
           numberOfKids: data.numberOfKids,
@@ -160,6 +158,14 @@ const RSVPForm = ({ name: nameFromUrl }: { name: string }) => {
     if (!rsvp.guests) return;
     const updatedGuests = [...rsvp.guests];
     updatedGuests[guestIndex] = { ...updatedGuests[guestIndex], mealChoice };
+    updateRsvp({ guests: updatedGuests });
+  };
+
+  // Update guest allergies
+  const updateGuestAllergies = (guestIndex: number, allergies: string) => {
+    if (!rsvp.guests) return;
+    const updatedGuests = [...rsvp.guests];
+    updatedGuests[guestIndex] = { ...updatedGuests[guestIndex], allergies };
     updateRsvp({ guests: updatedGuests });
   };
 
@@ -295,21 +301,18 @@ const RSVPForm = ({ name: nameFromUrl }: { name: string }) => {
                   {rsvp.guests.map((guest, index) => (
                     <div key={index} className="space-y-2">
                       <p className="text-foreground/70 text-sm">{guest.name}</p>
-                      <select
+                      <MealChoiceDialog
+                        guestName={guest.name}
                         value={guest.mealChoice}
-                        onChange={(e) => updateGuestMeal(index, e.target.value)}
-                        className="wedding-input w-full appearance-none cursor-pointer bg-navy-light"
-                      >
-                        {mealOptions.map((option) => (
-                          <option
-                            key={option.value}
-                            value={option.value}
-                            className="bg-navy-light"
-                          >
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={(value) => updateGuestMeal(index, value)}
+                      />
+                      <input
+                        type="text"
+                        value={guest.allergies ?? ""}
+                        onChange={(e) => updateGuestAllergies(index, e.target.value)}
+                        className="wedding-input w-full text-sm"
+                        placeholder="Allergies or dietary notes (optional)"
+                      />
                     </div>
                   ))}
                 </div>
@@ -361,23 +364,23 @@ const RSVPForm = ({ name: nameFromUrl }: { name: string }) => {
                         <label className="block text-foreground text-sm font-medium mb-2">
                           Plus One Meal Preference
                         </label>
-                        <select
+                        <MealChoiceDialog
+                          guestName={rsvp.plusOneName || "Plus One"}
                           value={rsvp.plusOneMealChoice}
-                          onChange={(e) =>
-                            updateRsvp({ plusOneMealChoice: e.target.value })
-                          }
-                          className="wedding-input w-full appearance-none cursor-pointer bg-navy-light"
-                        >
-                          {mealOptions.map((option) => (
-                            <option
-                              key={option.value}
-                              value={option.value}
-                              className="bg-navy-light"
-                            >
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
+                          onChange={(value) => updateRsvp({ plusOneMealChoice: value })}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-foreground text-sm font-medium mb-2">
+                          Allergies or Dietary Notes
+                        </label>
+                        <input
+                          type="text"
+                          value={rsvp.plusOneAllergies}
+                          onChange={(e) => updateRsvp({ plusOneAllergies: e.target.value })}
+                          className="wedding-input w-full text-sm"
+                          placeholder="Allergies or dietary notes (optional)"
+                        />
                       </div>
                     </motion.div>
                   )}
