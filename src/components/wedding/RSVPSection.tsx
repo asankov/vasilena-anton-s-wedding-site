@@ -317,7 +317,7 @@ const RSVPForm = ({ name: nameFromUrl }: { name: string }) => {
                   ))}
                 </div>
 
-                  {rsvp.askForPlusOne !== false && (
+                  {rsvp.askForPlusOne === true && (
                     <div>
                       <label className="flex items-center gap-3 cursor-pointer group">
                         <div
@@ -408,7 +408,7 @@ const RSVPForm = ({ name: nameFromUrl }: { name: string }) => {
               )}
 
               {/* Accommodation */}
-              {rsvp.askForAccommodation !== false && (
+              {rsvp.askForAccommodation === true && (
                 <div>
                   <label className="flex items-center gap-3 cursor-pointer group">
                     <div
