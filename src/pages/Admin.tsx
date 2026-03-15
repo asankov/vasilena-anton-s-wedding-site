@@ -249,13 +249,32 @@ const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLo
   const pending = rsvps.filter((r) => r.attending === null);
   const needAccommodation = rsvps.filter((r) => r.accommodation);
 
-  // Count total guests (including plus ones and guest lists)
-  const totalGuests = attending.reduce((count, r) => {
+  const pendingGuests = pending.reduce((count, r) => {
+    if (r.guests && r.guests.length > 0) return count + r.guests.length;
+    return count + 1;
+  }, 0);
+
+  const accommodationAdults = needAccommodation.reduce((count, r) => {
     if (r.guests && r.guests.length > 0) {
-      return count + r.guests.length;
+      return count + r.guests.length + (r.plusOne ? 1 : 0);
     }
     return count + 1 + (r.plusOne ? 1 : 0);
   }, 0);
+
+  const accommodationKids = needAccommodation.reduce((count, r) => count + (r.numberOfKids ?? 0), 0);
+
+  // Count attending adults (guests + plus ones, excluding kids)
+  const attendingAdults = attending.reduce((count, r) => {
+    if (r.guests && r.guests.length > 0) {
+      return count + r.guests.length + (r.plusOne ? 1 : 0);
+    }
+    return count + 1 + (r.plusOne ? 1 : 0);
+  }, 0);
+
+  const totalKids = attending.reduce((count, r) => count + (r.numberOfKids ?? 0), 0);
+
+  // Count total guests (including plus ones and guest lists)
+  const totalGuests = attendingAdults + totalKids;
 
   // Aggregate meal choices
   const mealCounts: Record<string, number> = {};
@@ -313,8 +332,11 @@ const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLo
           </div>
           <div className="wedding-card text-center">
             <Check className="w-6 h-6 text-green-400 mx-auto mb-2" />
-            <p className="text-3xl font-bold text-green-400">{attending.length}</p>
+            <p className="text-3xl font-bold text-green-400">{attendingAdults}</p>
             <p className="text-sm text-foreground/60">Attending</p>
+            {totalKids > 0 && (
+              <p className="text-xs text-foreground/40 mt-1">+{totalKids} kids</p>
+            )}
           </div>
           <div className="wedding-card text-center">
             <X className="w-6 h-6 text-red-400 mx-auto mb-2" />
@@ -323,13 +345,16 @@ const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLo
           </div>
           <div className="wedding-card text-center">
             <Loader2 className="w-6 h-6 text-yellow-400 mx-auto mb-2" />
-            <p className="text-3xl font-bold text-yellow-400">{pending.length}</p>
+            <p className="text-3xl font-bold text-yellow-400">{pendingGuests}</p>
             <p className="text-sm text-foreground/60">Pending</p>
           </div>
           <div className="wedding-card text-center">
             <Hotel className="w-6 h-6 text-blue-400 mx-auto mb-2" />
-            <p className="text-3xl font-bold text-blue-400">{needAccommodation.length}</p>
+            <p className="text-3xl font-bold text-blue-400">{accommodationAdults}</p>
             <p className="text-sm text-foreground/60">Need Accommodation</p>
+            {accommodationKids > 0 && (
+              <p className="text-xs text-foreground/40 mt-1">+{accommodationKids} kids</p>
+            )}
           </div>
         </div>
 
@@ -546,6 +571,8 @@ const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLo
                 <th className="pb-3 text-foreground/60 font-medium hidden md:table-cell">Guests</th>
                 <th className="pb-3 text-foreground/60 font-medium hidden md:table-cell">Meals</th>
                 <th className="pb-3 text-foreground/60 font-medium hidden md:table-cell">Accommodation</th>
+                <th className="pb-3 text-foreground/60 font-medium hidden md:table-cell">+1</th>
+                <th className="pb-3 text-foreground/60 font-medium hidden md:table-cell">Kids</th>
                 <th className="pb-3 text-foreground/60 font-medium">Link</th>
                 <th className="pb-3"></th>
               </tr>
@@ -609,6 +636,24 @@ const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLo
                       <span className="text-foreground/40">No</span>
                     )}
                   </td>
+                  <td className="py-3 hidden md:table-cell">
+                    {r.askForPlusOne ? (
+                      r.plusOne
+                        ? <span className="text-green-400">{r.plusOneName || "Yes"}</span>
+                        : <span className="text-foreground/40">No</span>
+                    ) : (
+                      <span className="text-foreground/20">—</span>
+                    )}
+                  </td>
+                  <td className="py-3 hidden md:table-cell">
+                    {r.askForKids ? (
+                      <span className={r.numberOfKids > 0 ? "text-foreground/70" : "text-foreground/40"}>
+                        {r.numberOfKids}
+                      </span>
+                    ) : (
+                      <span className="text-foreground/20">—</span>
+                    )}
+                  </td>
                   <td className="py-3">
                     <div className="flex items-center gap-2">
                       <button
@@ -668,7 +713,7 @@ const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLo
                 </tr>
                 {editingName === r.name && (
                   <tr className="border-b border-primary/10">
-                    <td colSpan={7} className="py-3">
+                    <td colSpan={9} className="py-3">
                       <div className="bg-navy-light/30 rounded-lg p-4 space-y-3">
                         <p className="text-sm font-medium text-foreground">Edit Template: {r.name}</p>
                         <div className="space-y-2">
