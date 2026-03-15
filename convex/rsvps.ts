@@ -43,16 +43,11 @@ export const submit = mutation({
       )
     ),
     attending: v.union(v.boolean(), v.null()),
-    plusOne: v.boolean(),
-    plusOneName: v.optional(v.string()),
-    plusOneMealChoice: v.optional(v.string()),
-    plusOneAllergies: v.optional(v.string()),
     mealChoice: v.optional(v.string()),
     accommodation: v.boolean(),
     numberOfKids: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    // Check if RSVP already exists for this name
     const existing = await ctx.db
       .query("rsvps")
       .withIndex("by_name", (q) => q.eq("name", args.name))
@@ -62,10 +57,6 @@ export const submit = mutation({
       name: args.name,
       guests: args.guests,
       attending: args.attending,
-      plusOne: args.plusOne,
-      plusOneName: args.plusOneName ?? "",
-      plusOneMealChoice: args.plusOneMealChoice ?? "",
-      plusOneAllergies: args.plusOneAllergies ?? "",
       mealChoice: args.mealChoice ?? "",
       accommodation: args.accommodation,
       numberOfKids: args.numberOfKids ?? 0,
@@ -103,7 +94,6 @@ export const createInvite = mutation({
       throw new Error("At least one guest is required");
     }
 
-    // Check if invite already exists
     const existing = await ctx.db
       .query("rsvps")
       .withIndex("by_name", (q) => q.eq("name", args.name))
@@ -117,10 +107,8 @@ export const createInvite = mutation({
     return await ctx.db.insert("rsvps", {
       name: args.name,
       guests,
+      originalGuestCount: guests.length,
       attending: null,
-      plusOne: false,
-      plusOneName: "",
-      plusOneMealChoice: "",
       mealChoice: "",
       accommodation: false,
       submitted: false,

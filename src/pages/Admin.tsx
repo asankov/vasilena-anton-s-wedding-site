@@ -250,25 +250,18 @@ const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLo
   const needAccommodation = rsvps.filter((r) => r.accommodation);
 
   const pendingGuests = pending.reduce((count, r) => {
-    if (r.guests && r.guests.length > 0) return count + r.guests.length;
-    return count + 1;
+    return count + (r.guests && r.guests.length > 0 ? r.guests.length : 1);
   }, 0);
 
   const accommodationAdults = needAccommodation.reduce((count, r) => {
-    if (r.guests && r.guests.length > 0) {
-      return count + r.guests.length + (r.plusOne ? 1 : 0);
-    }
-    return count + 1 + (r.plusOne ? 1 : 0);
+    return count + (r.guests && r.guests.length > 0 ? r.guests.length : 1);
   }, 0);
 
   const accommodationKids = needAccommodation.reduce((count, r) => count + (r.numberOfKids ?? 0), 0);
 
-  // Count attending adults (guests + plus ones, excluding kids)
+  // Count attending adults (all guests in the list, excluding kids)
   const attendingAdults = attending.reduce((count, r) => {
-    if (r.guests && r.guests.length > 0) {
-      return count + r.guests.length + (r.plusOne ? 1 : 0);
-    }
-    return count + 1 + (r.plusOne ? 1 : 0);
+    return count + (r.guests && r.guests.length > 0 ? r.guests.length : 1);
   }, 0);
 
   const totalKids = attending.reduce((count, r) => count + (r.numberOfKids ?? 0), 0);
@@ -279,20 +272,11 @@ const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLo
   // Aggregate meal choices
   const mealCounts: Record<string, number> = {};
   attending.forEach((r) => {
-    if (r.guests && r.guests.length > 0) {
-      r.guests.forEach((g) => {
-        if (g.mealChoice) {
-          mealCounts[g.mealChoice] = (mealCounts[g.mealChoice] || 0) + 1;
-        }
-      });
-    } else {
-      if (r.mealChoice) {
-        mealCounts[r.mealChoice] = (mealCounts[r.mealChoice] || 0) + 1;
+    (r.guests ?? []).forEach((g) => {
+      if (g.mealChoice) {
+        mealCounts[g.mealChoice] = (mealCounts[g.mealChoice] || 0) + 1;
       }
-      if (r.plusOne && r.plusOneMealChoice) {
-        mealCounts[r.plusOneMealChoice] = (mealCounts[r.plusOneMealChoice] || 0) + 1;
-      }
-    }
+    });
   });
 
   return (
@@ -600,34 +584,23 @@ const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLo
                     )}
                   </td>
                   <td className="py-3 text-foreground/70 hidden md:table-cell">
-                    {r.guests && r.guests.length > 0 ? (
-                      <div className="space-y-1">
-                        {r.guests.map((g, i) => (
-                          <div key={i}>{g.name}</div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="space-y-1">
-                        <div>{r.name}</div>
-                        {r.plusOne && r.plusOneName && <div>{r.plusOneName}</div>}
-                      </div>
-                    )}
+                    <div className="space-y-1">
+                      {(r.guests ?? []).map((g, i) => (
+                        <div key={i} className="flex items-center gap-1">
+                          {g.name}
+                          {r.originalGuestCount !== undefined && i >= r.originalGuestCount && (
+                            <span className="text-[10px] text-primary/60 ml-1">+1</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </td>
                   <td className="py-3 text-foreground/70 hidden md:table-cell">
-                    {r.guests && r.guests.length > 0 ? (
-                      <div className="space-y-1">
-                        {r.guests.map((g, i) => (
-                          <div key={i}>{formatMealChoice(g.mealChoice)}</div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="space-y-1">
-                        <div>{formatMealChoice(r.mealChoice)}</div>
-                        {r.plusOne && r.plusOneMealChoice && (
-                          <div>{formatMealChoice(r.plusOneMealChoice)}</div>
-                        )}
-                      </div>
-                    )}
+                    <div className="space-y-1">
+                      {(r.guests ?? []).map((g, i) => (
+                        <div key={i}>{formatMealChoice(g.mealChoice)}</div>
+                      ))}
+                    </div>
                   </td>
                   <td className="py-3 hidden md:table-cell">
                     {r.accommodation ? (
@@ -638,8 +611,8 @@ const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLo
                   </td>
                   <td className="py-3 hidden md:table-cell">
                     {r.askForPlusOne ? (
-                      r.plusOne
-                        ? <span className="text-green-400">{r.plusOneName || "Yes"}</span>
+                      r.originalGuestCount !== undefined && (r.guests ?? []).length > r.originalGuestCount
+                        ? <span className="text-green-400">{r.guests![r.originalGuestCount].name || "Yes"}</span>
                         : <span className="text-foreground/40">No</span>
                     ) : (
                       <span className="text-foreground/20">—</span>
@@ -799,7 +772,6 @@ const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLo
                 name: r.name,
                 guestNames: [
                   ...(r.guests && r.guests.length > 0 ? r.guests.map((g) => g.name) : [r.name]),
-                  ...(r.plusOne && r.plusOneName ? [r.plusOneName] : []),
                   ...Array.from({ length: r.numberOfKids ?? 0 }, (_, i) => `${r.name} – Child ${i + 1}`),
                 ],
               }))}

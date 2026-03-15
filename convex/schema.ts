@@ -14,10 +14,6 @@ export default defineSchema({
       )
     ),
     attending: v.union(v.boolean(), v.null()),
-    plusOne: v.boolean(),
-    plusOneName: v.string(),
-    plusOneMealChoice: v.string(),
-    plusOneAllergies: v.optional(v.string()),
     mealChoice: v.string(),
     accommodation: v.boolean(),
     submitted: v.boolean(),
@@ -26,6 +22,8 @@ export default defineSchema({
     maxNumberOfKids: v.number(),
     numberOfKids: v.number(),
     askForAccommodation: v.boolean(),
+    // Number of "original" guests in the invite (so we know which are plus ones)
+    originalGuestCount: v.optional(v.number()),
   }).index("by_name", ["name"]),
   adminSessions: defineTable({
     token: v.string(),

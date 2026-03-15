@@ -13,12 +13,8 @@ interface Guest {
 
 interface RSVPFormData {
   name: string;
-  guests?: Guest[];
+  guests: Guest[];
   attending: boolean | null;
-  plusOne: boolean;
-  plusOneName: string;
-  plusOneMealChoice: string;
-  plusOneAllergies: string;
   mealChoice: string;
   accommodation: boolean;
   numberOfKids: number;
@@ -26,58 +22,43 @@ interface RSVPFormData {
   askForKids?: boolean;
   maxNumberOfKids?: number;
   askForAccommodation?: boolean;
+  originalGuestCount?: number;
 }
 
-
 const RSVPSection = () => {
-  // Get name from URL query parameter
   const urlParams = new URLSearchParams(window.location.search);
   const name = urlParams.get("name");
-
-  // Don't render RSVP section if no name parameter
-  if (!name) {
-    return null;
-  }
-
+  if (!name) return null;
   return <RSVPForm name={name} />;
 };
 
 const RSVPForm = ({ name: nameFromUrl }: { name: string }) => {
   const [rsvp, setRsvp] = useState<RSVPFormData>({
     name: nameFromUrl,
+    guests: [],
     attending: null,
-    plusOne: false,
-    plusOneName: "",
-    plusOneMealChoice: "",
-    plusOneAllergies: "",
     mealChoice: "",
     accommodation: false,
     numberOfKids: 0,
   });
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">(
-    "idle",
-  );
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [initialLoaded, setInitialLoaded] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [originalGuestCount, setOriginalGuestCount] = useState<number | null>(null);
 
-  // Convex query - reactively fetches RSVP by name
   const existingRsvp = useQuery(api.rsvps.getByName, { name: nameFromUrl });
-
-  // Convex mutation
   const submitRsvpMutation = useMutation(api.rsvps.submit);
 
-  // Track whether we've synced server data into local state
   useEffect(() => {
     if (initialLoaded) return;
     if (existingRsvp) {
+      const guests = existingRsvp.guests ?? [];
+      const origCount = existingRsvp.originalGuestCount ?? guests.length;
+      setOriginalGuestCount(origCount);
       setRsvp({
         name: existingRsvp.name,
-        guests: existingRsvp.guests,
+        guests,
         attending: existingRsvp.attending,
-        plusOne: existingRsvp.plusOne,
-        plusOneName: existingRsvp.plusOneName,
-        plusOneMealChoice: existingRsvp.plusOneMealChoice,
-        plusOneAllergies: existingRsvp.plusOneAllergies ?? "",
         mealChoice: existingRsvp.mealChoice,
         accommodation: existingRsvp.accommodation,
         numberOfKids: existingRsvp.numberOfKids,
@@ -85,6 +66,7 @@ const RSVPForm = ({ name: nameFromUrl }: { name: string }) => {
         askForKids: existingRsvp.askForKids,
         maxNumberOfKids: existingRsvp.maxNumberOfKids,
         askForAccommodation: existingRsvp.askForAccommodation,
+        originalGuestCount: origCount,
       });
       setInitialLoaded(true);
     } else if (existingRsvp === null) {
@@ -92,7 +74,6 @@ const RSVPForm = ({ name: nameFromUrl }: { name: string }) => {
     }
   }, [existingRsvp, initialLoaded]);
 
-  // Auto-save with debounce
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasMountedRef = useRef(false);
 
@@ -105,10 +86,6 @@ const RSVPForm = ({ name: nameFromUrl }: { name: string }) => {
           name: data.name,
           guests: data.guests,
           attending: data.attending,
-          plusOne: data.plusOne,
-          plusOneName: data.plusOneName || undefined,
-          plusOneMealChoice: data.plusOneMealChoice || undefined,
-          plusOneAllergies: data.plusOneAllergies || undefined,
           mealChoice: data.mealChoice || undefined,
           accommodation: data.accommodation,
           numberOfKids: data.numberOfKids,
@@ -124,52 +101,41 @@ const RSVPForm = ({ name: nameFromUrl }: { name: string }) => {
   );
 
   useEffect(() => {
-    // Don't save until initial data has loaded
     if (!initialLoaded) return;
-    // Don't save on first render after load
     if (!hasMountedRef.current) {
       hasMountedRef.current = true;
       return;
     }
-
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-
-    saveTimeoutRef.current = setTimeout(() => {
-      saveToServer(rsvp);
-    }, 500);
-
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(() => saveToServer(rsvp), 500);
     return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     };
   }, [rsvp, initialLoaded, saveToServer]);
 
-  // Update local state
   const updateRsvp = (updates: Partial<RSVPFormData>) => {
     setRsvp((prev) => ({ ...prev, ...updates }));
     setSubmitted(false);
   };
 
-  // Update guest meal choice
-  const updateGuestMeal = (guestIndex: number, mealChoice: string) => {
-    if (!rsvp.guests) return;
-    const updatedGuests = [...rsvp.guests];
-    updatedGuests[guestIndex] = { ...updatedGuests[guestIndex], mealChoice };
-    updateRsvp({ guests: updatedGuests });
+  const updateGuestField = (index: number, field: keyof Guest, value: string) => {
+    const updated = [...rsvp.guests];
+    updated[index] = { ...updated[index], [field]: value };
+    updateRsvp({ guests: updated });
   };
 
-  // Update guest allergies
-  const updateGuestAllergies = (guestIndex: number, allergies: string) => {
-    if (!rsvp.guests) return;
-    const updatedGuests = [...rsvp.guests];
-    updatedGuests[guestIndex] = { ...updatedGuests[guestIndex], allergies };
-    updateRsvp({ guests: updatedGuests });
+  // The plus one is the last guest if guests.length > originalGuestCount
+  const origCount = originalGuestCount ?? rsvp.guests.length;
+  const hasPlusOne = rsvp.guests.length > origCount;
+
+  const addPlusOne = () => {
+    updateRsvp({ guests: [...rsvp.guests, { name: "", mealChoice: "", allergies: "" }] });
   };
 
-  // Show loading state while Convex query is loading
+  const removePlusOne = () => {
+    updateRsvp({ guests: rsvp.guests.slice(0, origCount) });
+  };
+
   if (existingRsvp === undefined) {
     return (
       <section id="rsvp" className="wedding-section">
@@ -183,7 +149,6 @@ const RSVPForm = ({ name: nameFromUrl }: { name: string }) => {
     );
   }
 
-  // Save status indicator
   const SaveIndicator = () => {
     if (saveStatus === "saving") {
       return (
@@ -217,23 +182,51 @@ const RSVPForm = ({ name: nameFromUrl }: { name: string }) => {
         <div className="wedding-divider mx-auto" />
 
         <div className="wedding-card mt-12 text-left">
-          {/* Save status */}
           <div className="flex justify-end">
             <SaveIndicator />
           </div>
 
-          {/* Guest names */}
-          {rsvp.guests && rsvp.guests.length > 0 && (
+          {/* Guest names (original, read-only) */}
+          {rsvp.guests.slice(0, origCount).length > 0 && (
             <div className="mb-6">
               <label className="block text-foreground text-sm font-medium mb-3">
                 Guests
               </label>
-              {rsvp.guests.map((guest, index) => (
-                <div
-                  key={index}
-                  className="wedding-input w-full bg-navy-light/50 cursor-default mb-3"
-                >
-                  {guest.name}
+              {rsvp.guests.slice(0, origCount).map((guest, index) => (
+                <div key={index} className="mb-3">
+                  <div className="wedding-input w-full bg-navy-light/50 cursor-default">
+                    {guest.name}
+                  </div>
+                  {rsvp.askForPlusOne === true && index === origCount - 1 && (
+                    hasPlusOne ? (
+                      <div className="mt-1 space-y-1">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={rsvp.guests[origCount]?.name ?? ""}
+                            onChange={(e) => updateGuestField(origCount, "name", e.target.value)}
+                            className="wedding-input w-full"
+                            placeholder="Plus one's full name"
+                          />
+                          <button
+                            type="button"
+                            onClick={removePlusOne}
+                            className="text-foreground/40 hover:text-red-400 transition-colors shrink-0"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={addPlusOne}
+                        className="w-full mt-1 py-2 rounded-lg border border-dashed border-primary/30 text-foreground/40 hover:border-primary/60 hover:text-foreground/60 transition-all text-sm flex items-center justify-center gap-2"
+                      >
+                        + Add plus one
+                      </button>
+                    )
+                  )}
                 </div>
               ))}
             </div>
@@ -293,97 +286,29 @@ const RSVPForm = ({ name: nameFromUrl }: { name: string }) => {
               transition={{ duration: 0.3 }}
               className="space-y-6"
             >
-
-                <div className="space-y-4">
-                  <label className="block text-foreground text-sm font-medium mb-3">
-                    Meal Preferences
-                  </label>
-                  {rsvp.guests.map((guest, index) => (
-                    <div key={index} className="space-y-2">
-                      <p className="text-foreground/70 text-sm">{guest.name}</p>
-                      <MealChoiceDialog
-                        guestName={guest.name}
-                        value={guest.mealChoice}
-                        onChange={(value) => updateGuestMeal(index, value)}
-                      />
-                      <input
-                        type="text"
-                        value={guest.allergies ?? ""}
-                        onChange={(e) => updateGuestAllergies(index, e.target.value)}
-                        className="wedding-input w-full text-sm"
-                        placeholder="Allergies or dietary notes (optional)"
-                      />
-                    </div>
-                  ))}
-                </div>
-
-                  {rsvp.askForPlusOne === true && (
-                    <div>
-                      <label className="flex items-center gap-3 cursor-pointer group">
-                        <div
-                          className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all ${
-                            rsvp.plusOne
-                              ? "border-primary bg-primary"
-                              : "border-primary/30 group-hover:border-primary/50"
-                          }`}
-                          onClick={() => updateRsvp({ plusOne: !rsvp.plusOne })}
-                        >
-                          {rsvp.plusOne && (
-                            <Check className="w-4 h-4 text-primary-foreground" />
-                          )}
-                        </div>
-                        <span className="text-foreground">
-                          I will be bringing a plus one
-                        </span>
-                      </label>
-                    </div>
-                  )}
-
-                  {rsvp.plusOne && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      transition={{ duration: 0.3 }}
-                      className="space-y-4 pl-9"
-                    >
-                      <div>
-                        <label className="block text-foreground text-sm font-medium mb-2">
-                          Plus One Name
-                        </label>
-                        <input
-                          type="text"
-                          value={rsvp.plusOneName}
-                          onChange={(e) =>
-                            updateRsvp({ plusOneName: e.target.value })
-                          }
-                          className="wedding-input w-full"
-                          placeholder="Enter their full name"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-foreground text-sm font-medium mb-2">
-                          Plus One Meal Preference
-                        </label>
-                        <MealChoiceDialog
-                          guestName={rsvp.plusOneName || "Plus One"}
-                          value={rsvp.plusOneMealChoice}
-                          onChange={(value) => updateRsvp({ plusOneMealChoice: value })}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-foreground text-sm font-medium mb-2">
-                          Allergies or Dietary Notes
-                        </label>
-                        <input
-                          type="text"
-                          value={rsvp.plusOneAllergies}
-                          onChange={(e) => updateRsvp({ plusOneAllergies: e.target.value })}
-                          className="wedding-input w-full text-sm"
-                          placeholder="Allergies or dietary notes (optional)"
-                        />
-                      </div>
-                    </motion.div>
-                  )}
+              {/* Meal preferences for all guests */}
+              <div className="space-y-4">
+                <label className="block text-foreground text-sm font-medium mb-3">
+                  Meal Preferences
+                </label>
+                {rsvp.guests.map((guest, index) => (
+                  <div key={index} className="space-y-2">
+                    <p className="text-foreground/70 text-sm">{guest.name || "Plus One"}</p>
+                    <MealChoiceDialog
+                      guestName={guest.name || "Plus One"}
+                      value={guest.mealChoice}
+                      onChange={(value) => updateGuestField(index, "mealChoice", value)}
+                    />
+                    <input
+                      type="text"
+                      value={guest.allergies ?? ""}
+                      onChange={(e) => updateGuestField(index, "allergies", e.target.value)}
+                      className="wedding-input w-full text-sm"
+                      placeholder="Allergies or dietary notes (optional)"
+                    />
+                  </div>
+                ))}
+              </div>
 
               {/* Kids */}
               {rsvp.askForKids && rsvp.maxNumberOfKids && rsvp.maxNumberOfKids > 0 && (
@@ -393,9 +318,7 @@ const RSVPForm = ({ name: nameFromUrl }: { name: string }) => {
                   </label>
                   <select
                     value={rsvp.numberOfKids}
-                    onChange={(e) =>
-                      updateRsvp({ numberOfKids: parseInt(e.target.value) })
-                    }
+                    onChange={(e) => updateRsvp({ numberOfKids: parseInt(e.target.value) })}
                     className="wedding-input w-full appearance-none cursor-pointer bg-navy-light"
                   >
                     {Array.from({ length: rsvp.maxNumberOfKids + 1 }, (_, i) => (
@@ -417,9 +340,7 @@ const RSVPForm = ({ name: nameFromUrl }: { name: string }) => {
                           ? "border-primary bg-primary"
                           : "border-primary/30 group-hover:border-primary/50"
                       }`}
-                      onClick={() =>
-                        updateRsvp({ accommodation: !rsvp.accommodation })
-                      }
+                      onClick={() => updateRsvp({ accommodation: !rsvp.accommodation })}
                     >
                       {rsvp.accommodation && (
                         <Check className="w-4 h-4 text-primary-foreground" />
@@ -437,7 +358,6 @@ const RSVPForm = ({ name: nameFromUrl }: { name: string }) => {
             </motion.div>
           )}
 
-          {/* Submit button */}
           <button
             type="button"
             disabled={submitted}
