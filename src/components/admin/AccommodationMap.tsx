@@ -346,6 +346,17 @@ const AccommodationMap = ({ guests }: { guests: AccommodationGuest[] }) => {
   const assignedNames = new Set(
     Object.values(assignments).flat().filter(Boolean) as string[]
   );
+
+  // Groups of unassigned guests, preserving invite grouping
+  const unassignedGroups = guests
+    .map((g) => ({
+      inviteName: g.name,
+      names: (g.guestNames.length > 0 ? g.guestNames : [g.name]).filter(
+        (n) => !assignedNames.has(n)
+      ),
+    }))
+    .filter((g) => g.names.length > 0);
+
   const unassignedGuests = allGuestNames.filter((n) => !assignedNames.has(n));
 
   const handleDragStart = (e: React.DragEvent, guestName: string) => {
@@ -431,13 +442,23 @@ const AccommodationMap = ({ guests }: { guests: AccommodationGuest[] }) => {
           {allGuestNames.length === 0 && (
             <p className="text-xs text-foreground/50">No guests need accommodation</p>
           )}
-          <div className="space-y-1.5 max-h-[60vh] overflow-y-auto">
-            {unassignedGuests.map((name) => (
-              <GuestChip
-                key={name}
-                name={name}
-                onDragStart={(e) => handleDragStart(e, name)}
-              />
+          <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+            {unassignedGroups.map((group, gi) => (
+              <div key={group.inviteName}>
+                {gi > 0 && <div className="border-t border-primary/10 mb-2" />}
+                {group.names.length > 1 && (
+                  <p className="text-[9px] text-foreground/30 uppercase tracking-wider mb-1 pl-1">{group.inviteName}</p>
+                )}
+                <div className="space-y-1.5">
+                  {group.names.map((name) => (
+                    <GuestChip
+                      key={name}
+                      name={name}
+                      onDragStart={(e) => handleDragStart(e, name)}
+                    />
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
           {assignedNames.size > 0 && (

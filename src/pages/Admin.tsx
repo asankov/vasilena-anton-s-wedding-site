@@ -752,9 +752,11 @@ const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLo
               guests={needAccommodation.map((r) => ({
                 id: r._id,
                 name: r.name,
-                guestNames: r.guests && r.guests.length > 0
-                  ? r.guests.map((g) => g.name)
-                  : [r.name, ...(r.plusOne && r.plusOneName ? [r.plusOneName] : [])],
+                guestNames: [
+                  ...(r.guests && r.guests.length > 0 ? r.guests.map((g) => g.name) : [r.name]),
+                  ...(r.plusOne && r.plusOneName ? [r.plusOneName] : []),
+                  ...Array.from({ length: r.numberOfKids ?? 0 }, (_, i) => `${r.name} – Child ${i + 1}`),
+                ],
               }))}
             />
           </TabsContent>
