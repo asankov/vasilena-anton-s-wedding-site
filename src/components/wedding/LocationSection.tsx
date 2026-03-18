@@ -62,22 +62,26 @@ const LocationSection = () => {
               </div>
             </div>
 
-            {/* Map placeholder */}
-            <div className="relative h-64 md:h-auto min-h-[250px] rounded-lg overflow-hidden bg-navy-light/50 flex items-center justify-center border border-primary/20">
-              <div className="text-center p-4">
-                <MapPin className="w-12 h-12 text-primary mx-auto mb-4" />
-                <p className="text-foreground/60 text-sm">
-                  Interactive map will be available soon
-                </p>
-                <a
-
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-block mt-4 text-primary hover:text-rose-light transition-colors text-sm underline underline-offset-4" href="https://maps.app.goo.gl/MfkQC2t6ajDM7VW58">
-
-                  Open in Google Maps
-                </a>
-              </div>
+            {/* Map */}
+            <div className="relative h-64 md:h-auto min-h-[250px] rounded-lg overflow-hidden border border-primary/20">
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d188255.35199134797!2d23.4372868!3d42.5023966!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x14ab3345a762a36b%3A0x478c0ffbc5d85ba0!2sWild%20Hill!5e0!3m2!1sen!2sbg!4v1773853561204!5m2!1sen!2sbg"
+                width="100%"
+                height="100%"
+                className="absolute inset-0 w-full h-full"
+                style={{ border: 0 }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title="Wedding venue location"
+              />
+              <a
+                href="https://maps.app.goo.gl/MfkQC2t6ajDM7VW58"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="absolute bottom-2 right-2 bg-white/90 text-primary hover:text-rose-light transition-colors text-xs px-2 py-1 rounded shadow underline underline-offset-2">
+                Open in Google Maps
+              </a>
             </div>
           </div>
         </div>
