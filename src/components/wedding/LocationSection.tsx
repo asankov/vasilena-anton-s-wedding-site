@@ -63,7 +63,7 @@ const LocationSection = () => {
             </div>
 
             {/* Map */}
-            <div className="relative h-64 md:h-auto min-h-[250px] rounded-lg overflow-hidden border border-primary/20">
+            <div className="relative h-64 md:h-auto min-h-[250px] rounded-lg overflow-hidden border-8 border-rose-light">
               <iframe
                 src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d188255.35199134797!2d23.4372868!3d42.5023966!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x14ab3345a762a36b%3A0x478c0ffbc5d85ba0!2sWild%20Hill!5e0!3m2!1sen!2sbg!4v1773853561204!5m2!1sen!2sbg"
                 width="100%"
