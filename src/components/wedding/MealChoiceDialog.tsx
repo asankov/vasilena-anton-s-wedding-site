@@ -322,10 +322,6 @@ function MenuTypeCard({
       onClick={onClick}
       className="text-left p-4 rounded-lg border-2 border-primary/30 hover:border-primary bg-navy-light/30 hover:bg-primary/5 transition-all group"
     >
-      {/* Placeholder image */}
-      <div className="w-full h-36 rounded-md bg-primary/10 mb-4 flex items-center justify-center border border-primary/10 group-hover:border-primary/20 transition-all">
-        <span className="text-foreground/20 text-xs">Photo coming soon</span>
-      </div>
       <p className="text-foreground font-medium mb-1">{title}</p>
       <p className="text-foreground/50 text-xs mb-3">{description}</p>
       <div className="flex flex-wrap gap-1">
