@@ -43,7 +43,7 @@ export function mealChoiceLabel(value: string): string {
 const meatSalad = {
   name: "Салата – 250 гр.",
   description: "Домат, гриловани тиквички с разядка от патладжан, краве сирене и песто",
-  image: null,
+  image: "/salat-meat.png",
 };
 
 const meatAppetizers = [
@@ -51,13 +51,13 @@ const meatAppetizers = [
     id: "appetizer1" as const,
     name: "Маринован телешки език",
     description: "Маринован телешки език с млечен дип, едрозърнеста горчица, хрупкаво хлебче с масло и перли от кисели краставички – 180 гр.",
-    image: null,
+    image: "/pre-meat-1.png",
   },
   {
     id: "appetizer2" as const,
     name: "Маринован патладжан",
     description: "Маринован патладжан с черница, микс от авокадо и сирене със заатар – 180 гр.",
-    image: null,
+    image: "/pre-meat-2-vegan.png",
   },
 ];
 
@@ -66,7 +66,7 @@ const meatMains = [
     id: "main1" as const,
     name: "Пилешки филенца",
     description: "Пилешки филенца с дижонски сос, чипс от кейл върху тартар от елда с печени зеленчуци и винегрет – 350 гр.",
-    image: null,
+    image: "/meat-chicken.png",
   },
   {
     id: "main2" as const,
@@ -362,6 +362,7 @@ function AppetizerStep({
             key={item.id}
             name={item.name}
             description={item.description}
+            image={item.image}
             selected={selected === item.id}
             onClick={() => onSelect(item.id)}
           />
@@ -394,6 +395,7 @@ function MainStep({
             key={item.id}
             name={item.name}
             description={item.description}
+            image={item.image}
             selected={selected === item.id}
             onClick={() => onSelect(item.id)}
           />
@@ -433,14 +435,14 @@ function SummaryStep({
       {menuType === "vegan" ? (
         <div className="space-y-3 mb-8">
           {veganCourses.map((course) => (
-            <SummaryCourse key={course.name} label={course.name} dish={course.description} />
+            <SummaryCourse key={course.name} label={course.name} dish={course.description} image={course.image} />
           ))}
         </div>
       ) : (
         <div className="space-y-3 mb-8">
-          <SummaryCourse label={meatSalad.name} dish={meatSalad.description} />
-          {appetizerInfo && <SummaryCourse label="Appetizer" dish={appetizerInfo.name} />}
-          {mainInfo && <SummaryCourse label="Main Course" dish={mainInfo.name} />}
+          <SummaryCourse label={meatSalad.name} dish={meatSalad.description} image={meatSalad.image} />
+          {appetizerInfo && <SummaryCourse label="Appetizer" dish={appetizerInfo.name} image={appetizerInfo.image} />}
+          {mainInfo && <SummaryCourse label="Main Course" dish={mainInfo.name} image={mainInfo.image} />}
         </div>
       )}
 
@@ -456,10 +458,14 @@ function SummaryStep({
   );
 }
 
-function SummaryCourse({ label, dish }: { label: string; dish: string }) {
+function SummaryCourse({ label, dish, image }: { label: string; dish: string; image: string | null }) {
   return (
     <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/10">
-      <Check className="w-4 h-4 text-primary shrink-0" />
+      {image ? (
+        <img src={image} alt={dish} className="w-14 h-14 rounded-md object-cover shrink-0" />
+      ) : (
+        <Check className="w-4 h-4 text-primary shrink-0" />
+      )}
       <div>
         <p className="text-xs text-foreground/40 uppercase tracking-wider">{label}</p>
         <p className="text-sm text-foreground">{dish}</p>
@@ -473,11 +479,13 @@ function SummaryCourse({ label, dish }: { label: string; dish: string }) {
 function DishCard({
   name,
   description,
+  image,
   selected,
   onClick,
 }: {
   name: string;
   description: string;
+  image: string | null;
   selected: boolean;
   onClick: () => void;
 }) {
@@ -491,14 +499,24 @@ function DishCard({
           : "border-primary/30 hover:border-primary/60 bg-navy-light/30 hover:bg-primary/5"
       }`}
     >
-      {/* Placeholder image */}
-      <div className={`w-full h-36 rounded-md mb-3 flex items-center justify-center border transition-all ${
-        selected ? "bg-primary/20 border-primary/30" : "bg-primary/10 border-primary/10"
+      <div className={`w-full h-36 rounded-md mb-3 overflow-hidden relative border transition-all ${
+        selected ? "border-primary/30" : "border-primary/10"
       }`}>
-        {selected ? (
-          <Check className="w-8 h-8 text-primary" />
+        {image ? (
+          <img src={image} alt={name} className="w-full h-full object-cover" />
         ) : (
-          <span className="text-foreground/20 text-xs">Photo coming soon</span>
+          <div className={`w-full h-full flex items-center justify-center ${selected ? "bg-primary/20" : "bg-primary/10"}`}>
+            {selected ? (
+              <Check className="w-8 h-8 text-primary" />
+            ) : (
+              <span className="text-foreground/20 text-xs">Photo coming soon</span>
+            )}
+          </div>
+        )}
+        {selected && image && (
+          <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+            <Check className="w-8 h-8 text-primary" />
+          </div>
         )}
       </div>
       <div className="flex items-start justify-between gap-2">
