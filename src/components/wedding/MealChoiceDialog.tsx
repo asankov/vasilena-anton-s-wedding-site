@@ -43,7 +43,7 @@ export function mealChoiceLabel(value: string): string {
 const meatSalad = {
   name: "Салата – 250 гр.",
   description: "Домат, гриловани тиквички с разядка от патладжан, краве сирене и песто",
-  image: "/salat-meat.png",
+  image: "/salad-meat.png",
 };
 
 const meatAppetizers = [
@@ -66,13 +66,13 @@ const meatMains = [
     id: "main1" as const,
     name: "Пилешки филенца",
     description: "Пилешки филенца с дижонски сос, чипс от кейл върху тартар от елда с печени зеленчуци и винегрет – 350 гр.",
-    image: "/meat-chicken.png",
+    image: "/main-chicken.png",
   },
   {
     id: "main2" as const,
     name: "Крехко телешко",
     description: "Крехко телешко, завито в панчета с трюфел и пате от гъши дроб, поднесено със сотирани моркови и печен сос – 350 гр.",
-    image: null,
+    image: "/main-beef.png",
   },
 ];
 
@@ -80,17 +80,17 @@ const veganCourses = [
   {
     name: "Салата – 250 гр.",
     description: `Салата „Цезар" с тофу`,
-    image: null,
+    image: "/salad-vegan.png",
   },
   {
     name: "Предястие – 180 гр.",
     description: "Маринован патладжан с черница, микс от авокадо и сирене със заатар",
-    image: null,
+    image: "/pre-meat-2-vegan.png",
   },
   {
     name: "Основно – 350 гр.",
     description: "Стек от целина, пюре от морков с джинджифил и кокосово мляко, аспержи, сос от червена боровинка",
-    image: null,
+    image: "/main-vegan.png",
   },
 ];
 
@@ -459,18 +459,52 @@ function SummaryStep({
 }
 
 function SummaryCourse({ label, dish, image }: { label: string; dish: string; image: string | null }) {
+  const [expanded, setExpanded] = useState(false);
+
   return (
-    <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/10">
-      {image ? (
-        <img src={image} alt={dish} className="w-14 h-14 rounded-md object-cover shrink-0" />
-      ) : (
-        <Check className="w-4 h-4 text-primary shrink-0" />
-      )}
-      <div>
-        <p className="text-xs text-foreground/40 uppercase tracking-wider">{label}</p>
-        <p className="text-sm text-foreground">{dish}</p>
+    <>
+      <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/10">
+        {image ? (
+          <img
+            src={image}
+            alt={dish}
+            className="w-14 h-14 rounded-md object-cover shrink-0 cursor-zoom-in hover:opacity-90 transition-opacity"
+            onClick={() => setExpanded(true)}
+          />
+        ) : (
+          <Check className="w-4 h-4 text-primary shrink-0" />
+        )}
+        <div>
+          <p className="text-xs text-foreground/40 uppercase tracking-wider">{label}</p>
+          <p className="text-sm text-foreground">{dish}</p>
+        </div>
       </div>
-    </div>
+
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center p-6"
+            style={{ backgroundColor: "rgba(8, 17, 31, 0.92)", backdropFilter: "blur(6px)" }}
+            onClick={() => setExpanded(false)}
+          >
+            <motion.img
+              src={image!}
+              alt={dish}
+              initial={{ scale: 0.85, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.85, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="max-w-full max-h-full rounded-xl object-contain shadow-2xl cursor-zoom-out"
+              style={{ maxWidth: "90vw", maxHeight: "90vh" }}
+            />
+            <p className="absolute bottom-8 left-1/2 -translate-x-1/2 text-foreground text-sm px-4 py-2 rounded-lg bg-navy-light/90 border border-primary/30 whitespace-nowrap">{dish}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 

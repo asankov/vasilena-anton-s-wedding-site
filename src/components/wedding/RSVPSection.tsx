@@ -176,7 +176,7 @@ const RSVPForm = ({ name: nameFromUrl }: { name: string }) => {
         viewport={{ once: true }}
         className="text-center max-w-xl mx-auto w-full"
       >
-        <h2 className="wedding-subheading mb-4">Will You Join Us?</h2>
+        <h2 className="wedding-subheading mb-4">{rsvp.guests.length == 1 ? "Ще бъдеш ли с нас?" : "Ще бъдете ли с нас?"}</h2>
         <h3 className="wedding-heading mb-8">RSVP</h3>
 
         <div className="wedding-divider mx-auto" />
@@ -190,7 +190,7 @@ const RSVPForm = ({ name: nameFromUrl }: { name: string }) => {
           {rsvp.guests.slice(0, origCount).length > 0 && (
             <div className="mb-6">
               <label className="block text-foreground text-sm font-medium mb-3">
-                Guests
+                Име
               </label>
               {rsvp.guests.slice(0, origCount).map((guest, index) => (
                 <div key={index} className="mb-3">
@@ -235,7 +235,7 @@ const RSVPForm = ({ name: nameFromUrl }: { name: string }) => {
           {/* Attending */}
           <div className="mb-6">
             <label className="block text-foreground text-sm font-medium mb-4">
-              Will you be attending?
+              {rsvp.guests.length == 1 ? "Ще бъдеш ли с нас?" : "Ще бъдете ли с нас?"}
             </label>
             <div className="flex gap-4">
               <button
@@ -248,7 +248,7 @@ const RSVPForm = ({ name: nameFromUrl }: { name: string }) => {
                 }`}
               >
                 <Check className="w-5 h-5" />
-                <span>Joyfully Accept</span>
+                <span>{ rsvp.guests.length == 1 ? "Приемам" : "Приемаме" }</span>
               </button>
               <button
                 type="button"
@@ -260,7 +260,7 @@ const RSVPForm = ({ name: nameFromUrl }: { name: string }) => {
                 }`}
               >
                 <X className="w-5 h-5" />
-                <span>Regretfully Decline</span>
+                <span>{ rsvp.guests.length == 1 ? "Няма да мога" : "Няма да можем" }</span>
               </button>
             </div>
           </div>
@@ -273,7 +273,7 @@ const RSVPForm = ({ name: nameFromUrl }: { name: string }) => {
               className="text-center py-4"
             >
               <p className="wedding-text text-foreground/70">
-                We're sorry you can't make it. You'll be missed!
+                { rsvp.guests.length == 1 ? "Съжаляваме, че няма да може да дойдеш!" : "Съжаляваме, че няма да може да дойдете!" }
               </p>
             </motion.div>
           )}
@@ -289,7 +289,7 @@ const RSVPForm = ({ name: nameFromUrl }: { name: string }) => {
               {/* Meal preferences for all guests */}
               <div className="space-y-4">
                 <label className="block text-foreground text-sm font-medium mb-3">
-                  Meal Preferences
+                  Избор на меню
                 </label>
                 {rsvp.guests.map((guest, index) => (
                   <div key={index} className="space-y-2">
@@ -304,7 +304,7 @@ const RSVPForm = ({ name: nameFromUrl }: { name: string }) => {
                       value={guest.allergies ?? ""}
                       onChange={(e) => updateGuestField(index, "allergies", e.target.value)}
                       className="wedding-input w-full text-sm"
-                      placeholder="Allergies or dietary notes (optional)"
+                      placeholder="Алергии или други предпочитания"
                     />
                   </div>
                 ))}
@@ -314,7 +314,7 @@ const RSVPForm = ({ name: nameFromUrl }: { name: string }) => {
               {rsvp.askForKids && rsvp.maxNumberOfKids && rsvp.maxNumberOfKids > 0 && (
                 <div>
                   <label className="block text-foreground text-sm font-medium mb-2">
-                    How many kids will you bring?
+                    Колко деца ще доведете?
                   </label>
                   <select
                     value={rsvp.numberOfKids}
@@ -347,12 +347,12 @@ const RSVPForm = ({ name: nameFromUrl }: { name: string }) => {
                       )}
                     </div>
                     <span className="text-foreground">
-                      I would like to stay at the venue overnight
+                      Искаме да останем с преспиване
                     </span>
                   </label>
-                  <p className="text-foreground/50 text-xs mt-2 ml-9">
+                  {/*<p className="text-foreground/50 text-xs mt-2 ml-9">
                     Limited rooms available. We'll confirm availability.
-                  </p>
+                  </p>*/}
                 </div>
               )}
             </motion.div>
@@ -364,7 +364,7 @@ const RSVPForm = ({ name: nameFromUrl }: { name: string }) => {
             onClick={() => setSubmitted(true)}
             className="wedding-button w-full mt-8 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
-            {submitted ? "Submitted" : "Submit RSVP"}
+            {submitted ? "Запазено" : "Запази"}
           </button>
         </div>
       </motion.div>

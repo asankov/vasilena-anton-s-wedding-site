@@ -22,7 +22,7 @@ const LocationSection = () => {
             <div className="text-left space-y-6">
               <div>
                 <h4 className="text-2xl font-serif text-primary mb-2">
-                  The Grand Estate
+                  Wild Hill
                 </h4>
                 <p className="wedding-text">
                   A beautiful historic venue nestled in the countryside,
@@ -34,7 +34,7 @@ const LocationSection = () => {
               <div className="flex items-start gap-4">
                 <MapPin className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
                 <div>
-                  <p className="text-foreground font-medium">Address</p>
+                  <p className="text-foreground font-medium">Адрес</p>
                   <p className="text-foreground/70 text-sm">Wild Hill, Shumnatoto tepe 2, Ihtiman 
 
                     <br />
@@ -46,7 +46,7 @@ const LocationSection = () => {
               <div className="flex items-start gap-4">
                 <Clock className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
                 <div>
-                  <p className="text-foreground font-medium">Ceremony Time</p>
+                  <p className="text-foreground font-medium">Начало</p>
                   <p className="text-foreground/70 text-sm">2:00 PM</p>
                 </div>
               </div>
@@ -54,15 +54,14 @@ const LocationSection = () => {
               <div className="flex items-start gap-4">
                 <Car className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
                 <div>
-                  <p className="text-foreground font-medium">Parking</p>
+                  <p className="text-foreground font-medium">Паркинг</p>
                   <p className="text-foreground/70 text-sm">
-                    Free parking available on-site
+                    Наличен на място
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Map */}
             <div className="relative h-64 md:h-auto min-h-[250px] rounded-lg overflow-hidden border-8 border-rose-light">
               <iframe
                 src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d188255.35199134797!2d23.4372868!3d42.5023966!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x14ab3345a762a36b%3A0x478c0ffbc5d85ba0!2sWild%20Hill!5e0!3m2!1sen!2sbg!4v1773853561204!5m2!1sen!2sbg"
