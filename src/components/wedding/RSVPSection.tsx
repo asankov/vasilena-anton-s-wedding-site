@@ -61,7 +61,7 @@ const RSVPForm = ({ name: nameFromUrl }: { name: string }) => {
         attending: existingRsvp.attending,
         mealChoice: existingRsvp.mealChoice,
         accommodation: existingRsvp.accommodation,
-        numberOfKids: existingRsvp.numberOfKids,
+        numberOfKids: existingRsvp.numberOfKids === 0 ? (existingRsvp.maxNumberOfKids ?? 0) : existingRsvp.numberOfKids,
         askForPlusOne: existingRsvp.askForPlusOne,
         askForKids: existingRsvp.askForKids,
         maxNumberOfKids: existingRsvp.maxNumberOfKids,
@@ -88,7 +88,7 @@ const RSVPForm = ({ name: nameFromUrl }: { name: string }) => {
           attending: data.attending,
           mealChoice: data.mealChoice || undefined,
           accommodation: data.accommodation,
-          numberOfKids: data.numberOfKids,
+          numberOfKids: data.numberOfKids ?? 0,
         });
         setSaveStatus("saved");
         setTimeout(() => setSaveStatus("idle"), 2000);
@@ -316,17 +316,22 @@ const RSVPForm = ({ name: nameFromUrl }: { name: string }) => {
                   <label className="block text-foreground text-sm font-medium mb-2">
                     Колко деца ще доведете?
                   </label>
-                  <select
-                    value={rsvp.numberOfKids}
-                    onChange={(e) => updateRsvp({ numberOfKids: parseInt(e.target.value) })}
-                    className="wedding-input w-full appearance-none cursor-pointer bg-navy-light"
-                  >
+                  <div className="flex gap-2">
                     {Array.from({ length: rsvp.maxNumberOfKids + 1 }, (_, i) => (
-                      <option key={i} value={i} className="bg-navy-light">
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => updateRsvp({ numberOfKids: i })}
+                        className={`flex-1 py-3 rounded-lg border-2 transition-all text-sm font-medium ${
+                          rsvp.numberOfKids === i
+                            ? "border-primary bg-primary/20 text-primary"
+                            : "border-primary/30 text-foreground/60 hover:border-primary/50"
+                        }`}
+                      >
                         {i}
-                      </option>
+                      </button>
                     ))}
-                  </select>
+                  </div>
                 </div>
               )}
 
