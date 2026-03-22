@@ -5,31 +5,31 @@ const agendaItems = [
   {
     time: "17:30",
     title: "Коктейл за добре дошли",
-    description: "Exchange of vows in the garden",
+    description: "Започваме спокойно, с чаша в ръка",
     icon: Martini,
   },
   {
     time: "18:30",
     title: "Ритуал",
-    description: "Drinks and canapés on the terrace",
+    description: "Началото на нашето завинаги",
     icon: Sparkles,
   },
   {
     time: "19:00",
     title: "Снимки и поздравления",
-    description: "Capturing memories with loved ones",
+    description: "Прегръдки, снимки и хубави думи",
     icon: Camera,
   },
   {
     time: "20:00",
     title: "Вечеря",
-    description: "Three-course dinner in the ballroom",
+    description: "Тристепенно меню, наздравици и споделени мигове",
     icon: Utensils,
   },
   {
     time: "22:00",
     title: "Торта",
-    description: "Dance the night away!",
+    description: "Сладък момент преди вечерта да ускори ритъма",
     icon: Cake,
   },
 ];
