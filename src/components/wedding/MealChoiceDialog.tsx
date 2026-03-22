@@ -100,7 +100,7 @@ interface Props {
   onChange: (value: string) => void;
 }
 
-type Step = "menu-type" | "appetizer" | "main" | "summary";
+type Step = "menu-type" | "salad" | "appetizer" | "main" | "summary";
 
 export default function MealChoiceDialog({ guestName, value, onChange }: Props) {
   const [open, setOpen] = useState(false);
@@ -112,7 +112,6 @@ export default function MealChoiceDialog({ guestName, value, onChange }: Props) 
   const [step, setStep] = useState<Step>("menu-type");
 
   const openDialog = () => {
-    // Reset to existing values when opening
     const c = decodeMealChoice(value);
     setMenuType(c?.type ?? null);
     setAppetizer(c?.appetizer ?? undefined);
@@ -130,7 +129,7 @@ export default function MealChoiceDialog({ guestName, value, onChange }: Props) 
     } else {
       setAppetizer(undefined);
       setMain(undefined);
-      setStep("appetizer");
+      setStep("salad");
     }
   };
 
@@ -211,12 +210,20 @@ export default function MealChoiceDialog({ guestName, value, onChange }: Props) 
                 <MenuTypeStep onSelect={handleSelectMenuType} />
               )}
 
+              {/* Step: salad preview (meat only) */}
+              {step === "salad" && (
+                <SaladStep
+                  onNext={() => setStep("appetizer")}
+                  onBack={() => setStep("menu-type")}
+                />
+              )}
+
               {/* Step: choose appetizer (meat only) */}
               {step === "appetizer" && (
                 <AppetizerStep
                   selected={appetizer}
                   onSelect={handleSelectAppetizer}
-                  onBack={() => setStep("menu-type")}
+                  onBack={() => setStep("salad")}
                 />
               )}
 
@@ -256,11 +263,11 @@ export default function MealChoiceDialog({ guestName, value, onChange }: Props) 
 function StepIndicator({ step, menuType }: { step: Step; menuType: "meat" | "vegan" | null }) {
   const steps = menuType === "vegan"
     ? ["Меню", "Преглед"]
-    : ["Меню", "Предястие", "Основно", "Преглед"];
+    : ["Меню", "Салата", "Предястие", "Основно", "Преглед"];
 
   const stepIndex = menuType === "vegan"
     ? ["menu-type", "summary"].indexOf(step)
-    : ["menu-type", "appetizer", "main", "summary"].indexOf(step);
+    : ["menu-type", "salad", "appetizer", "main", "summary"].indexOf(step);
 
   return (
     <div className="flex items-center gap-2 mb-8">
@@ -335,6 +342,33 @@ function MenuTypeCard({
   );
 }
 
+// ─── Salad step ───────────────────────────────────────────────────────────────
+
+function SaladStep({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <h4 className="text-foreground/70 text-sm">Салата</h4>
+        <button type="button" onClick={onBack} className="text-xs text-primary hover:underline">← Назад</button>
+      </div>
+      <div className="mb-6 p-4 rounded-lg border-2 border-primary bg-primary/10">
+        <div className="w-full h-64 rounded-md mb-3 overflow-hidden border border-primary/30">
+          <img src={meatSalad.image} alt={meatSalad.name} className="w-full h-full object-cover object-center cursor-pointer" onClick={onNext} />
+        </div>
+        <p className="font-medium text-sm text-primary mb-1">{meatSalad.name}</p>
+        <p className="text-foreground/50 text-xs leading-relaxed">{meatSalad.description}</p>
+      </div>
+      <button
+        type="button"
+        onClick={onNext}
+        className="wedding-button w-full"
+      >
+        Напред
+      </button>
+    </div>
+  );
+}
+
 // ─── Appetizer step ───────────────────────────────────────────────────────────
 
 function AppetizerStep({
@@ -351,10 +385,6 @@ function AppetizerStep({
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-foreground/70 text-sm">Изберете предястие</h4>
         <button type="button" onClick={onBack} className="text-xs text-primary hover:underline">← Назад</button>
-      </div>
-      <div className="mb-4 p-3 rounded-lg bg-primary/5 border border-primary/10">
-        <p className="text-xs text-foreground/50 font-medium uppercase tracking-wider mb-1">{meatSalad.name}</p>
-        <p className="text-sm text-foreground/70">{meatSalad.description}</p>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {meatAppetizers.map((item) => (
@@ -441,8 +471,8 @@ function SummaryStep({
       ) : (
         <div className="space-y-3 mb-8">
           <SummaryCourse label={meatSalad.name} dish={meatSalad.description} image={meatSalad.image} />
-          {appetizerInfo && <SummaryCourse label="Appetizer" dish={appetizerInfo.name} image={appetizerInfo.image} />}
-          {mainInfo && <SummaryCourse label="Main Course" dish={mainInfo.name} image={mainInfo.image} />}
+          {appetizerInfo && <SummaryCourse label="Предястие" dish={appetizerInfo.name} image={appetizerInfo.image} />}
+          {mainInfo && <SummaryCourse label="Основно" dish={mainInfo.name} image={mainInfo.image} />}
         </div>
       )}
 
@@ -527,13 +557,13 @@ function DishCard({
     <button
       type="button"
       onClick={onClick}
-      className={`text-left p-4 rounded-lg border-2 transition-all ${
+      className={`text-left p-4 rounded-lg border-2 transition-all h-full flex flex-col ${
         selected
           ? "border-primary bg-primary/10"
           : "border-primary/30 hover:border-primary/60 bg-navy-light/30 hover:bg-primary/5"
       }`}
     >
-      <div className={`w-full h-36 rounded-md mb-3 overflow-hidden relative border transition-all ${
+      <div className={`w-full aspect-square rounded-md mb-3 overflow-hidden relative border transition-all ${
         selected ? "border-primary/30" : "border-primary/10"
       }`}>
         {image ? (
