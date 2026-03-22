@@ -241,25 +241,25 @@ const RSVPForm = ({ name: nameFromUrl }: { name: string }) => {
               <button
                 type="button"
                 onClick={() => updateRsvp({ attending: true })}
-                className={`flex-1 py-4 rounded-lg border-2 transition-all flex items-center justify-center gap-2 ${
+                className={`flex-1 py-4 px-4 rounded-lg border-2 transition-all flex items-center justify-center gap-2 ${
                   rsvp.attending === true
                     ? "border-primary bg-primary/20 text-primary"
                     : "border-primary/30 text-foreground/60 hover:border-primary/50"
                 }`}
               >
-                <Check className="w-5 h-5" />
+                <Check className="w-5 h-5 shrink-0" />
                 <span>{ rsvp.guests.length == 1 ? "Приемам" : "Приемаме" }</span>
               </button>
               <button
                 type="button"
                 onClick={() => updateRsvp({ attending: false })}
-                className={`flex-1 py-4 rounded-lg border-2 transition-all flex items-center justify-center gap-2 ${
+                className={`flex-1 py-4 px-4 rounded-lg border-2 transition-all flex items-center justify-center gap-2 ${
                   rsvp.attending === false
                     ? "border-primary bg-primary/20 text-primary"
                     : "border-primary/30 text-foreground/60 hover:border-primary/50"
                 }`}
               >
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5 shrink-0" />
                 <span>{ rsvp.guests.length == 1 ? "Няма да мога" : "Няма да можем" }</span>
               </button>
             </div>

@@ -34,15 +34,16 @@ export function decodeMealChoice(value: string): MealChoice | null {
 export function mealChoiceLabel(value: string): string {
   const choice = decodeMealChoice(value);
   if (!choice) return "Choose your menu";
-  if (choice.type === "vegan") return "Вегетарианско меню";
+  if (choice.type === "vegan") return "Вегетарианско/Веган меню";
   const appetizer = choice.appetizer === "appetizer1" ? "Телешки език" : choice.appetizer === "appetizer2" ? "Маринован патладжан" : "—";
   const main = choice.main === "main1" ? "Пилешки филенца" : choice.main === "main2" ? "Крехко телешко" : "—";
   return `Месно меню · ${appetizer} · ${main}`;
 }
 
 const meatSalad = {
-  name: "Салата – 250 гр.",
+  name: "Лятна салата",
   description: "Домат, гриловани тиквички с разядка от патладжан, краве сирене и песто",
+  weight: "250 г",
   image: "/salad-meat.png",
 };
 
@@ -50,13 +51,15 @@ const meatAppetizers = [
   {
     id: "appetizer1" as const,
     name: "Маринован телешки език",
-    description: "Маринован телешки език с млечен дип, едрозърнеста горчица, хрупкаво хлебче с масло и перли от кисели краставички – 180 гр.",
+    description: "Маринован телешки език с млечен дип, едрозърнеста горчица, хрупкаво хлебче с масло и перли от кисели краставички",
+    weight: "180 г",
     image: "/pre-meat-1.png",
   },
   {
     id: "appetizer2" as const,
     name: "Маринован патладжан",
-    description: "Маринован патладжан с черница, микс от авокадо и сирене със заатар – 180 гр.",
+    description: "Маринован патладжан с черница, микс от авокадо и сирене със заатар",
+    weight: "180 г",
     image: "/pre-meat-2-vegan.png",
   },
 ];
@@ -65,31 +68,36 @@ const meatMains = [
   {
     id: "main1" as const,
     name: "Пилешки филенца",
-    description: "Пилешки филенца с дижонски сос, чипс от кейл върху тартар от елда с печени зеленчуци и винегрет – 350 гр.",
+    description: "Пилешки филенца с дижонски сос, чипс от кейл върху тартар от елда с печени зеленчуци и винегрет",
+    weight: "350 г",
     image: "/main-chicken.png",
   },
   {
     id: "main2" as const,
     name: "Крехко телешко",
-    description: "Крехко телешко, завито в панчета с трюфел и пате от гъши дроб, поднесено със сотирани моркови и печен сос – 350 гр.",
+    description: "Крехко телешко, завито в панчета с трюфел и пате от гъши дроб, поднесено със сотирани моркови и печен сос",
+    weight: "350 г",
     image: "/main-beef.png",
   },
 ];
 
 const veganCourses = [
   {
-    name: "Салата – 250 гр.",
-    description: `Салата „Цезар" с тофу`,
+    name: "Салата",
+    description: `Салата "Цезар" с тофу`,
+    weight: "250 г",
     image: "/salad-vegan.png",
   },
   {
-    name: "Предястие – 180 гр.",
+    name: "Предястие",
     description: "Маринован патладжан с черница, микс от авокадо и сирене със заатар",
+    weight: "180 г",
     image: "/pre-meat-2-vegan.png",
   },
   {
-    name: "Основно – 350 гр.",
+    name: "Основно",
     description: "Стек от целина, пюре от морков с джинджифил и кокосово мляко, аспержи, сос от червена боровинка",
+    weight: "350 г",
     image: "/main-vegan.png",
   },
 ];
@@ -302,7 +310,7 @@ function MenuTypeStep({ onSelect }: { onSelect: (t: "meat" | "vegan") => void })
           onClick={() => onSelect("meat")}
         />
         <MenuTypeCard
-          title="Вегетарианско меню"
+          title="Вегетарианско/Веган меню"
           description="Изцяло растително меню"
           tags={["Салата", "Маринован патладжан", "Стек от целина"]}
           onClick={() => onSelect("vegan")}
@@ -357,6 +365,7 @@ function SaladStep({ onNext, onBack }: { onNext: () => void; onBack: () => void 
         </div>
         <p className="font-medium text-sm text-primary mb-1">{meatSalad.name}</p>
         <p className="text-foreground/50 text-xs leading-relaxed">{meatSalad.description}</p>
+        <span className="inline-block mt-2 text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary/70">{meatSalad.weight}</span>
       </div>
       <button
         type="button"
@@ -392,6 +401,7 @@ function AppetizerStep({
             key={item.id}
             name={item.name}
             description={item.description}
+            weight={item.weight}
             image={item.image}
             selected={selected === item.id}
             onClick={() => onSelect(item.id)}
@@ -425,6 +435,7 @@ function MainStep({
             key={item.id}
             name={item.name}
             description={item.description}
+            weight={item.weight}
             image={item.image}
             selected={selected === item.id}
             onClick={() => onSelect(item.id)}
@@ -465,14 +476,14 @@ function SummaryStep({
       {menuType === "vegan" ? (
         <div className="space-y-3 mb-8">
           {veganCourses.map((course) => (
-            <SummaryCourse key={course.name} label={course.name} dish={course.description} image={course.image} />
+            <SummaryCourse key={course.name} label={course.name} dish={course.description} weight={course.weight} image={course.image} />
           ))}
         </div>
       ) : (
         <div className="space-y-3 mb-8">
-          <SummaryCourse label={meatSalad.name} dish={meatSalad.description} image={meatSalad.image} />
-          {appetizerInfo && <SummaryCourse label="Предястие" dish={appetizerInfo.name} image={appetizerInfo.image} />}
-          {mainInfo && <SummaryCourse label="Основно" dish={mainInfo.name} image={mainInfo.image} />}
+          <SummaryCourse label={meatSalad.name} dish={meatSalad.description} weight={meatSalad.weight} image={meatSalad.image} />
+          {appetizerInfo && <SummaryCourse label="Предястие" dish={appetizerInfo.name} weight={appetizerInfo.weight} image={appetizerInfo.image} />}
+          {mainInfo && <SummaryCourse label="Основно" dish={mainInfo.name} weight={mainInfo.weight} image={mainInfo.image} />}
         </div>
       )}
 
@@ -488,7 +499,7 @@ function SummaryStep({
   );
 }
 
-function SummaryCourse({ label, dish, image }: { label: string; dish: string; image: string | null }) {
+function SummaryCourse({ label, dish, weight, image }: { label: string; dish: string; weight?: string; image: string | null }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -504,9 +515,12 @@ function SummaryCourse({ label, dish, image }: { label: string; dish: string; im
         ) : (
           <Check className="w-4 h-4 text-primary shrink-0" />
         )}
-        <div>
+        <div className="flex-1 min-w-0">
           <p className="text-xs text-foreground/40 uppercase tracking-wider">{label}</p>
           <p className="text-sm text-foreground">{dish}</p>
+          {weight && (
+            <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary/70">{weight}</span>
+          )}
         </div>
       </div>
 
@@ -543,12 +557,14 @@ function SummaryCourse({ label, dish, image }: { label: string; dish: string; im
 function DishCard({
   name,
   description,
+  weight,
   image,
   selected,
   onClick,
 }: {
   name: string;
   description: string;
+  weight?: string;
   image: string | null;
   selected: boolean;
   onClick: () => void;
@@ -587,6 +603,9 @@ function DishCard({
         <div>
           <p className={`font-medium text-sm mb-1 ${selected ? "text-primary" : "text-foreground"}`}>{name}</p>
           <p className="text-foreground/50 text-xs leading-relaxed">{description}</p>
+          {weight && (
+            <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary/70">{weight}</span>
+          )}
         </div>
         {selected && (
           <div className="w-5 h-5 rounded-full bg-primary shrink-0 flex items-center justify-center mt-0.5">
