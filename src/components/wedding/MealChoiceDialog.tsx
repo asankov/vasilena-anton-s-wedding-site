@@ -278,19 +278,19 @@ function StepIndicator({ step, menuType }: { step: Step; menuType: "meat" | "veg
     : ["menu-type", "salad", "appetizer", "main", "summary"].indexOf(step);
 
   return (
-    <div className="flex items-center gap-2 mb-8">
+    <div className="flex items-start mb-8">
       {steps.map((label, i) => (
-        <div key={label} className="flex items-center gap-2">
-          <div className={`flex items-center gap-1.5 text-xs ${i <= stepIndex ? "text-primary" : "text-foreground/30"}`}>
-            <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${i < stepIndex ? "bg-primary border-primary" : i === stepIndex ? "border-primary" : "border-foreground/20"}`}>
+        <>
+          <div key={label} className={`flex flex-col items-center gap-1 text-xs ${i <= stepIndex ? "text-primary" : "text-foreground/30"}`}>
+            <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${i < stepIndex ? "bg-primary border-primary" : i === stepIndex ? "border-primary" : "border-foreground/20"}`}>
               {i < stepIndex ? <Check className="w-3 h-3 text-primary-foreground" /> : <span>{i + 1}</span>}
             </div>
-            <span className="hidden sm:inline">{label}</span>
+            <span className="text-[10px] leading-tight text-center">{label}</span>
           </div>
           {i < steps.length - 1 && (
-            <div className={`flex-1 h-px w-6 ${i < stepIndex ? "bg-primary" : "bg-foreground/20"}`} />
+            <div className={`flex-1 h-px mt-[10px] mx-1 ${i < stepIndex ? "bg-primary" : "bg-foreground/20"}`} />
           )}
-        </div>
+        </>
       ))}
     </div>
   );
@@ -350,13 +350,11 @@ function MenuTypeCard({
   );
 }
 
-// ─── Salad step ───────────────────────────────────────────────────────────────
-
 function SaladStep({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h4 className="text-foreground/70 text-sm">Салата</h4>
+        <h4 className="text-foreground/70 text-sm">Изберете салата</h4>
         <button type="button" onClick={onBack} className="text-xs text-primary hover:underline">← Назад</button>
       </div>
       <div className="mb-6 p-4 rounded-lg border-2 border-primary bg-primary/10">
@@ -377,8 +375,6 @@ function SaladStep({ onNext, onBack }: { onNext: () => void; onBack: () => void 
     </div>
   );
 }
-
-// ─── Appetizer step ───────────────────────────────────────────────────────────
 
 function AppetizerStep({
   selected,
@@ -481,7 +477,7 @@ function SummaryStep({
         </div>
       ) : (
         <div className="space-y-3 mb-8">
-          <SummaryCourse label={meatSalad.name} dish={meatSalad.description} weight={meatSalad.weight} image={meatSalad.image} />
+          <SummaryCourse label="Салата" dish={meatSalad.description} weight={meatSalad.weight} image={meatSalad.image} />
           {appetizerInfo && <SummaryCourse label="Предястие" dish={appetizerInfo.name} weight={appetizerInfo.weight} image={appetizerInfo.image} />}
           {mainInfo && <SummaryCourse label="Основно" dish={mainInfo.name} weight={mainInfo.weight} image={mainInfo.image} />}
         </div>
@@ -601,7 +597,7 @@ function DishCard({
       </div>
       <div className="flex items-start justify-between gap-2">
         <div>
-          <p className={`font-medium text-sm mb-1 ${selected ? "text-primary" : "text-foreground"}`}>{name}</p>
+          <p className="font-medium text-sm mb-1 text-primary">{name}</p>
           <p className="text-foreground/50 text-xs leading-relaxed">{description}</p>
           {weight && (
             <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary/70">{weight}</span>
