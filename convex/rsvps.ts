@@ -125,6 +125,7 @@ export const updateInvite = mutation({
   args: {
     sessionToken: v.string(),
     name: v.string(),
+    guests: v.array(v.string()),
     askForPlusOne: v.boolean(),
     askForKids: v.boolean(),
     maxNumberOfKids: v.number(),
@@ -139,12 +140,35 @@ export const updateInvite = mutation({
     if (!existing) {
       throw new Error(`Invite "${args.name}" not found`);
     }
+    // Merge new guest names with existing meal choices where possible
+    const existingGuests = existing.guests ?? [];
+    const guests = args.guests.map((guestName, i) => ({
+      name: guestName,
+      mealChoice: existingGuests[i]?.mealChoice ?? "",
+      allergies: existingGuests[i]?.allergies,
+    }));
     await ctx.db.patch(existing._id, {
+      guests,
+      originalGuestCount: guests.length,
       askForPlusOne: args.askForPlusOne,
       askForKids: args.askForKids,
       maxNumberOfKids: args.maxNumberOfKids,
       askForAccommodation: args.askForAccommodation,
     });
+  },
+});
+
+export const setInviteSent = mutation({
+  args: { sessionToken: v.string(), name: v.string(), inviteSent: v.boolean() },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx, args.sessionToken);
+    const rsvp = await ctx.db
+      .query("rsvps")
+      .withIndex("by_name", (q) => q.eq("name", args.name))
+      .first();
+    if (rsvp) {
+      await ctx.db.patch(rsvp._id, { inviteSent: args.inviteSent });
+    }
   },
 });
 

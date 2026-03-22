@@ -24,6 +24,7 @@ export default defineSchema({
     askForAccommodation: v.boolean(),
     // Number of "original" guests in the invite (so we know which are plus ones)
     originalGuestCount: v.optional(v.number()),
+    inviteSent: v.optional(v.boolean()),
   }).index("by_name", ["name"]),
   adminSessions: defineTable({
     token: v.string(),

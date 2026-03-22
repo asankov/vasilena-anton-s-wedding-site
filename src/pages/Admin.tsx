@@ -109,9 +109,12 @@ const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLo
   const createInvite = useMutation(api.rsvps.createInvite);
   const updateInviteMutation = useMutation(api.rsvps.updateInvite);
   const removeInviteMutation = useMutation(api.rsvps.remove);
+  const setInviteSentMutation = useMutation(api.rsvps.setInviteSent);
 
   const [showInviteForm, setShowInviteForm] = useState(false);
   const [editingName, setEditingName] = useState<string | null>(null);
+  const [editGuests, setEditGuests] = useState<string[]>([]);
+  const [editNewGuest, setEditNewGuest] = useState("");
   const [editPlusOne, setEditPlusOne] = useState(false);
   const [editKids, setEditKids] = useState(false);
   const [editMaxKids, setEditMaxKids] = useState(0);
@@ -204,8 +207,12 @@ const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLo
     a.click();
   };
 
-  const startEditing = (r: { name: string; askForPlusOne: boolean; askForKids: boolean; maxNumberOfKids: number; askForAccommodation: boolean }) => {
+  const startEditing = (r: { name: string; guests?: { name: string }[]; askForPlusOne: boolean; askForKids: boolean; maxNumberOfKids: number; askForAccommodation: boolean; originalGuestCount?: number }) => {
     setEditingName(r.name);
+    // Only show original guests (exclude plus ones added by guests themselves)
+    const originalCount = r.originalGuestCount ?? (r.guests?.length ?? 0);
+    setEditGuests((r.guests ?? []).slice(0, originalCount).map((g) => g.name));
+    setEditNewGuest("");
     setEditPlusOne(r.askForPlusOne);
     setEditKids(r.askForKids);
     setEditMaxKids(r.maxNumberOfKids);
@@ -219,6 +226,7 @@ const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLo
       await updateInviteMutation({
         sessionToken,
         name: editingName,
+        guests: editGuests,
         askForPlusOne: editPlusOne,
         askForKids: editKids,
         maxNumberOfKids: editKids ? editMaxKids : 0,
@@ -558,6 +566,7 @@ const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLo
                 <th className="pb-3 text-foreground/60 font-medium hidden md:table-cell">+1</th>
                 <th className="pb-3 text-foreground/60 font-medium hidden md:table-cell">Kids</th>
                 <th className="pb-3 text-foreground/60 font-medium">Link</th>
+                <th className="pb-3 text-foreground/60 font-medium">Sent</th>
                 <th className="pb-3"></th>
               </tr>
             </thead>
@@ -620,9 +629,7 @@ const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLo
                   </td>
                   <td className="py-3 hidden md:table-cell">
                     {r.askForKids ? (
-                      <span className={r.numberOfKids > 0 ? "text-foreground/70" : "text-foreground/40"}>
-                        {r.numberOfKids}
-                      </span>
+                      <span className="text-foreground/70">{r.numberOfKids} / {r.maxNumberOfKids}</span>
                     ) : (
                       <span className="text-foreground/20">—</span>
                     )}
@@ -646,6 +653,15 @@ const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLo
                         QR
                       </button>
                     </div>
+                  </td>
+                  <td className="py-3">
+                    <input
+                      type="checkbox"
+                      checked={r.inviteSent ?? false}
+                      onChange={(e) => setInviteSentMutation({ sessionToken, name: r.name, inviteSent: e.target.checked })}
+                      className="w-4 h-4 accent-primary"
+                      title="Invite sent"
+                    />
                   </td>
                   <td className="py-3">
                     <div className="flex items-center gap-2">
@@ -686,9 +702,50 @@ const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLo
                 </tr>
                 {editingName === r.name && (
                   <tr className="border-b border-primary/10">
-                    <td colSpan={9} className="py-3">
+                    <td colSpan={11} className="py-3">
                       <div className="bg-navy-light/30 rounded-lg p-4 space-y-3">
-                        <p className="text-sm font-medium text-foreground">Edit Template: {r.name}</p>
+                        <p className="text-sm font-medium text-foreground">Edit Invite: {r.name}</p>
+                        <div>
+                          <label className="block text-foreground text-sm font-medium mb-2">Guests</label>
+                          <div className="flex gap-2 mb-2">
+                            <input
+                              type="text"
+                              value={editNewGuest}
+                              onChange={(e) => setEditNewGuest(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  const t = editNewGuest.trim();
+                                  if (t) { setEditGuests([...editGuests, t]); setEditNewGuest(""); }
+                                }
+                              }}
+                              className="wedding-input flex-1 text-sm py-1 px-2"
+                              placeholder="Add a guest name"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const t = editNewGuest.trim();
+                                if (t) { setEditGuests([...editGuests, t]); setEditNewGuest(""); }
+                              }}
+                              className="px-3 py-1 bg-primary/20 text-primary rounded-lg hover:bg-primary/30 transition-colors"
+                            >
+                              <Plus className="w-4 h-4" />
+                            </button>
+                          </div>
+                          {editGuests.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                              {editGuests.map((name, i) => (
+                                <span key={i} className="flex items-center gap-1 bg-primary/20 text-primary text-sm px-3 py-1 rounded-full">
+                                  {name}
+                                  <button onClick={() => setEditGuests(editGuests.filter((_, j) => j !== i))} className="hover:text-red-400">
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                         <div className="space-y-2">
                           <label className="flex items-center gap-3 cursor-pointer">
                             <input
@@ -742,7 +799,7 @@ const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLo
                           </button>
                           <button
                             onClick={handleSaveEdit}
-                            disabled={editLoading}
+                            disabled={editLoading || editGuests.length === 0}
                             className="wedding-button text-sm px-4 py-1.5 disabled:opacity-50"
                           >
                             {editLoading ? (
