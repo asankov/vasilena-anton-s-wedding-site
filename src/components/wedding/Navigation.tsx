@@ -7,10 +7,10 @@ const Navigation = () => {
   const hasName = new URLSearchParams(window.location.search).has("name");
 
   const navItems = [
-    { label: "Home", href: "#" },
-    { label: "Date", href: "#countdown" },
-    { label: "Location", href: "#location" },
-    { label: "Agenda", href: "#agenda" },
+    { label: "Начало", href: "#" },
+    { label: "Кога", href: "#countdown" },
+    { label: "Къде", href: "#location" },
+    { label: "Програма", href: "#agenda" },
   ];
 
   if (hasName) {

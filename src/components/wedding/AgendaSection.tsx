@@ -1,36 +1,36 @@
 import { motion } from "framer-motion";
-import { Heart, Utensils, Music, Camera, Sparkles } from "lucide-react";
+import { Heart, Utensils, Camera, Sparkles, Cake, Martini } from "lucide-react";
 
 const agendaItems = [
   {
-    time: "2:00 PM",
-    title: "Ceremony",
+    time: "17:30",
+    title: "Коктейл за добре дошли",
     description: "Exchange of vows in the garden",
-    icon: Heart,
+    icon: Martini,
   },
   {
-    time: "3:00 PM",
-    title: "Cocktail Hour",
+    time: "18:30",
+    title: "Ритуал",
     description: "Drinks and canapés on the terrace",
     icon: Sparkles,
   },
   {
-    time: "4:00 PM",
-    title: "Photo Session",
+    time: "19:00",
+    title: "Снимки и поздравления",
     description: "Capturing memories with loved ones",
     icon: Camera,
   },
   {
-    time: "5:00 PM",
-    title: "Dinner",
+    time: "20:00",
+    title: "Вечеря",
     description: "Three-course dinner in the ballroom",
     icon: Utensils,
   },
   {
-    time: "7:00 PM",
-    title: "First Dance & Party",
+    time: "22:00",
+    title: "Торта",
     description: "Dance the night away!",
-    icon: Music,
+    icon: Cake,
   },
 ];
 
@@ -45,7 +45,7 @@ const AgendaSection = () => {
         className="text-center max-w-3xl mx-auto w-full"
       >
         <h2 className="wedding-subheading mb-4">The Day</h2>
-        <h3 className="wedding-heading mb-8">Agenda</h3>
+        <h3 className="wedding-heading mb-8">Програма</h3>
 
         <div className="wedding-divider mx-auto" />
 

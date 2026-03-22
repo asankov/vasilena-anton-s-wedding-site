@@ -9,8 +9,7 @@ interface TimeLeft {
 }
 
 const CountdownSection = () => {
-  // Set wedding date - you can change this
-  const weddingDate = new Date("2026-08-15T14:00:00");
+  const weddingDate = new Date("2026-08-15T17:30:00");
 
   const calculateTimeLeft = (): TimeLeft => {
     const difference = +weddingDate - +new Date();
@@ -38,10 +37,10 @@ const CountdownSection = () => {
   }, []);
 
   const timeBlocks = [
-  { label: "Days", value: timeLeft.days },
-  { label: "Hours", value: timeLeft.hours },
-  { label: "Minutes", value: timeLeft.minutes },
-  { label: "Seconds", value: timeLeft.seconds }];
+  { label: "Дни", value: timeLeft.days },
+  { label: "Часове", value: timeLeft.hours },
+  { label: "Минути", value: timeLeft.minutes },
+  { label: "Секунди", value: timeLeft.seconds }];
 
 
   return (
@@ -54,7 +53,7 @@ const CountdownSection = () => {
         className="text-center">
 
         <h2 className="wedding-subheading mb-4">Save the Date</h2>
-        <p className="wedding-heading mb-12">August 15, 2026</p>
+        <p className="wedding-heading mb-12">15 Август, 2026</p>
 
         <div className="wedding-divider mx-auto" />
 

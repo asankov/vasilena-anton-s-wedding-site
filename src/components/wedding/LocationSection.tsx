@@ -12,7 +12,7 @@ const LocationSection = () => {
         className="text-center max-w-4xl mx-auto">
 
         <h2 className="wedding-subheading mb-4">The Venue</h2>
-        <h3 className="wedding-heading mb-8">Location</h3>
+        <h3 className="wedding-heading mb-8">Локация</h3>
 
         <div className="wedding-divider mx-auto" />
 
@@ -25,9 +25,9 @@ const LocationSection = () => {
                   Wild Hill
                 </h4>
                 <p className="wedding-text">
-                  A beautiful historic venue nestled in the countryside,
-                  offering breathtaking views and elegant surroundings for our
-                  special day.
+                  Wild Hill е хълм, създаден от природата, разпростиращ се на 7 декара площ в местност Шумнатото тепе.
+                  <br />
+                  Прегърнат от борова гора, потънал в тишина и спокойствие, с панорама, разкриваща живописната Рила планина.
                 </p>
               </div>
 
@@ -47,7 +47,7 @@ const LocationSection = () => {
                 <Clock className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
                 <div>
                   <p className="text-foreground font-medium">Начало</p>
-                  <p className="text-foreground/70 text-sm">2:00 PM</p>
+                  <p className="text-foreground/70 text-sm">17:30</p>
                 </div>
               </div>
 
