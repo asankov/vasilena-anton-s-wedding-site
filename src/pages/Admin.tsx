@@ -562,11 +562,11 @@ const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLo
                 <th className="pb-3 text-foreground/60 font-medium">Status</th>
                 <th className="pb-3 text-foreground/60 font-medium hidden md:table-cell">Guests</th>
                 <th className="pb-3 text-foreground/60 font-medium hidden md:table-cell">Meals</th>
-                <th className="pb-3 text-foreground/60 font-medium hidden md:table-cell">Accommodation</th>
+                <th className="pb-3 text-foreground/60 font-medium hidden md:table-cell">Acc.</th>
                 <th className="pb-3 text-foreground/60 font-medium hidden md:table-cell">+1</th>
                 <th className="pb-3 text-foreground/60 font-medium hidden md:table-cell">Kids</th>
                 <th className="pb-3 text-foreground/60 font-medium">Link</th>
-                <th className="pb-3 text-foreground/60 font-medium">Sent</th>
+                <th className="pb-3"></th>
                 <th className="pb-3"></th>
               </tr>
             </thead>
@@ -655,15 +655,6 @@ const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLo
                     </div>
                   </td>
                   <td className="py-3">
-                    <input
-                      type="checkbox"
-                      checked={r.inviteSent ?? false}
-                      onChange={(e) => setInviteSentMutation({ sessionToken, name: r.name, inviteSent: e.target.checked })}
-                      className="w-4 h-4 accent-primary"
-                      title="Invite sent"
-                    />
-                  </td>
-                  <td className="py-3">
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => startEditing(r)}
@@ -698,6 +689,20 @@ const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLo
                         </button>
                       )}
                     </div>
+                  </td>
+                  <td className="py-3">
+                    <button
+                      type="button"
+                      title="Invite sent"
+                      onClick={() => setInviteSentMutation({ sessionToken, name: r.name, inviteSent: !(r.inviteSent ?? false) })}
+                      className={`w-5 h-5 rounded-full border-2 transition-all flex items-center justify-center ${
+                        r.inviteSent
+                          ? "border-primary bg-primary/30"
+                          : "border-foreground/30 bg-transparent hover:border-primary/50"
+                      }`}
+                    >
+                      {r.inviteSent && <div className="w-2 h-2 rounded-full bg-primary" />}
+                    </button>
                   </td>
                 </tr>
                 {editingName === r.name && (
