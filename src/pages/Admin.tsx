@@ -6,6 +6,7 @@ import { QRCodeCanvas } from "qrcode.react";
 import { Link } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import AccommodationMap from "@/components/admin/AccommodationMap";
+import TableMap from "@/components/admin/TableMap";
 import { decodeMealChoice } from "@/components/wedding/MealChoiceDialog";
 
 function formatMealChoice(value: string): string {
@@ -312,6 +313,7 @@ const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLo
           <TabsList className="mb-6 bg-navy-light/50">
             <TabsTrigger value="rsvp">RSVP</TabsTrigger>
             <TabsTrigger value="accommodation">Accommodation</TabsTrigger>
+            <TabsTrigger value="tables">Tables</TabsTrigger>
           </TabsList>
 
           <TabsContent value="rsvp" className="space-y-8">
@@ -836,6 +838,16 @@ const AdminDashboard = ({ sessionToken, onLogout }: { sessionToken: string; onLo
                   ...(r.guests && r.guests.length > 0 ? r.guests.map((g) => g.name) : [r.name]),
                   ...Array.from({ length: r.numberOfKids ?? 0 }, (_, i) => `${r.name} – Child ${i + 1}`),
                 ],
+              }))}
+            />
+          </TabsContent>
+
+          <TabsContent value="tables">
+            <TableMap
+              guests={attending.map((r) => ({
+                id: r._id,
+                name: r.name,
+                guestNames: r.guests && r.guests.length > 0 ? r.guests.map((g) => g.name) : [r.name],
               }))}
             />
           </TabsContent>
