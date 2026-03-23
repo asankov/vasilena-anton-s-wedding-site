@@ -38,7 +38,7 @@ const CountdownSection = () => {
 
   const timeBlocks = [
   { label: "Дни", value: timeLeft.days },
-  { label: "Часове", value: timeLeft.hours },
+  { label: "Часа", value: timeLeft.hours },
   { label: "Минути", value: timeLeft.minutes },
   { label: "Секунди", value: timeLeft.seconds }];
 
